@@ -1,0 +1,74 @@
+{
+    "base_model": {
+        "model_name": "base_model",
+        "recorded_at": "2025-04-28 11:14:32",
+        "metrics": {
+            "inference_speed": 230.0078582763672,
+            "model_size": 34.25062084197998,
+            "num_parameters": 8911301,
+            "parameter_size": 33.99391555786133,
+            "flops": 15919276032,
+            "training_time": null,
+            "sparsity_reduction": null,
+            "mean_iou": 0.5536300539970398,
+            "dice": 0.9835336208343506,
+            "c_2": 0.7701992988586426,
+            "c_3": 0.687558650970459,
+            "c_4": 0.7939883470535278
+        }
+    },
+    "snip_model": {
+        "model_name": "snip_model",
+        "recorded_at": "2025-04-28 11:14:44",
+        "metrics": {
+            "inference_speed": 228.74930381774902,
+            "model_size": 34.25062084197998,
+            "num_parameters": 8911301,
+            "parameter_size": 33.99391555786133,
+            "flops": 15919276032,
+            "training_time": null,
+            "sparsity_reduction": null,
+            "mean_iou": 0.5705091953277588,
+            "dice": 0.9848946928977966,
+            "c_2": 0.7767000794410706,
+            "c_3": 0.7229219079017639,
+            "c_4": 0.8129355311393738
+        }
+    },
+    "magnitude_model": {
+        "model_name": "magnitude_model",
+        "recorded_at": "2025-04-28 11:14:57",
+        "metrics": {
+            "inference_speed": 232.95069694519043,
+            "model_size": 34.25062084197998,
+            "num_parameters": 8911301,
+            "parameter_size": 33.99391555786133,
+            "flops": 15919276032,
+            "training_time": null,
+            "sparsity_reduction": null,
+            "mean_iou": 0.6110388040542603,
+            "dice": 0.9838440418243408,
+            "c_2": 0.7641119360923767,
+            "c_3": 0.7809193730354309,
+            "c_4": 0.8016624450683594
+        }
+    },
+    "slimmed_model": {
+        "model_name": "slimmed_model",
+        "recorded_at": "2025-04-28 11:15:10",
+        "metrics": {
+            "inference_speed": 232.5791597366333,
+            "model_size": 34.25062084197998,
+            "num_parameters": 8911301,
+            "parameter_size": 33.99391555786133,
+            "flops": 15919276032,
+            "training_time": null,
+            "sparsity_reduction": null,
+            "mean_iou": 0.5909639596939087,
+            "dice": 0.9848217964172363,
+            "c_2": 0.7119978070259094,
+            "c_3": 0.6821815371513367,
+            "c_4": 0.8151072263717651
+        }
+    }
+}

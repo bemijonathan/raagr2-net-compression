@@ -8,3 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+model
+*.pth
+*.pt
+*.pth.tar
+*.pt.tar
+*.pth.tar.gz
+*.pt.tar.gz
+
+data
+mlruns
