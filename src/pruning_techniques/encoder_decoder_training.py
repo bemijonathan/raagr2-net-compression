@@ -1,6 +1,7 @@
+
 import torch
 from src.utils.training import resume_training
-from src.architecture.shared_model import get_initial_model, load_trained_model, evaluate_dice_scores, class_dice, arrange_img, dice_coef, mean_iou
+from src.architecture.enc_dec_shared_model import get_initial_model, load_trained_model, evaluate_dice_scores, class_dice, arrange_img, dice_coef, mean_iou
 from src.architecture.model import load_trained_model as ltm
 from src.utils.custom_loss import Weighted_BCEnDice_loss
 from src.utils.load_data import BrainDataset
@@ -43,16 +44,16 @@ def main():
         val_loader = val_loader,
         loss_function = Weighted_BCEnDice_loss,
         device = device,
-        resume_checkpoint_path = "model/shared/dlu_net_model_epoch_40.pth",
-        starting_epoch=40,
-        num_epochs=70,
+        resume_checkpoint_path = "",
+        starting_epoch=0,
+        num_epochs=10,
         checkpoint_interval=5,
-        model_save_dir='model/shared',
-        experiment_name="shared_weights_model",
+        model_save_dir='model/enc_dec_shared_model',
+        experiment_name="enc_dec_shared_model",
         validate_every=10,
     )
 
-    torch.save(new_model, 'model/shared/shared_dlu_model_epoch_40.pth')
+    torch.save(new_model, 'model/enc_dec_shared_model/enc_dec_shared_model_epoch_10.pth')
 
 
 def test_model():
@@ -165,6 +166,6 @@ def statistics():
 
 
 if __name__ == "__main__":
-    # main()
-    test_model()
+    main()
+    # test_model()
     # statistics()

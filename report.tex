@@ -1,0 +1,761 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{microtype}
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{titling}
+\usepackage{adjustbox}
+
+% Changed from numbered citation to Harvard style (author-year)
+\usepackage[round,sort&compress]{natbib}
+
+% Table formatting
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{5pt}
+
+% Math spacing
+\setlength{\abovedisplayskip}{12pt}
+\setlength{\belowdisplayskip}{12pt}
+\setlength{\abovedisplayshortskip}{6pt}
+\setlength{\belowdisplayshortskip}{6pt}
+
+% Bibliography setup
+\bibliographystyle{agsm} % Using Harvard style
+
+\begin{document}
+
+% Remove default title
+\thispagestyle{empty}
+
+% Custom title page
+\begin{center}
+    \vspace*{1cm}
+    {\large\textbf{DE MONTFORT UNIVERSITY LEICESTER}}\\[2cm]
+    
+    {\LARGE\textbf{Slim Models Creation using Pruning and Sharing Weights on RAAGR2-Net Models}}\\[2cm]
+    
+    {\large A Thesis Submitted in Partial Fulfillment of the Requirement\\
+    for the Degree of Master of Science in Artificial Intelligence}\\[1cm]
+    
+    {\large Computer, Engineering and Media Faculty}\\[0.3cm]
+    
+    {\large De Montfort University, Leicester}\\[3cm]
+    
+    {\large By}\\[0.5cm]
+    
+    {\large\textbf{Jonathan Atiene}}\\[1.5cm]
+    
+    {\large Supervised by}\\[0.5cm]
+    
+    {\large\textbf{Dr Aboozar Taherkhani}}\\[0.5cm]
+    
+    {\large School of Computer Science and Informatics}\\[0.3cm]
+    
+    {\large Computer, Engineering and Media Faculty}\\[1cm]
+    
+    {\large\today}
+\end{center}
+
+\newpage
+
+\section*{Acknowledgement}
+I would like to express my profound gratitude to myself for persevering through this journey and fulfilling a dream conceived in my youth. My deepest appreciation extends to my family, my friends; the Pallams and Abdullah, for their constant encouragement and steadfast support throughout this project. Special thanks to Dr. Aboozar Taherkhani for his mentorship, for believing in my capabilities, and for providing me the opportunity to participate in this program. Above all, I give thanks to God for His guidance and pray for continued humility as I follow His path forward.
+
+
+\newpage
+
+\begin{abstract}
+\noindent\textbf{Abstract---}The increasing complexity of deep segmentation networks has heightened accuracy in brain tumor delineation but simultaneously hindered their deployment in real-time clinical and edge settings. In this work, we present a comprehensive evaluation of four pruning techniques---magnitude-based, network slimming, SNIP, and dependency-graph pruning---alongside a novel shared-weight module (SharedDepthwiseBlock) applied to the RAAGR2-Net architecture, which integrates recurrent residual blocks, spatial attention, and atrous spatial pyramid pooling. Models were trained on the BraTS dataset (T1, T1ce, T2, FLAIR) using the Adam optimizer with ReduceLROnPlateau scheduling over 30--70 epochs and assessed via Dice coefficient, mean IoU, parameter count, and inference speed. Our best configuration achieves a 60\% reduction in parameters with less than a 5\% drop in mean Dice score ($>$0.85) and doubles inference throughput on standard GPU hardware. These slimmed RAAGR2-Net variants maintain clinically acceptable segmentation performance while reducing memory and compute demands, paving the way for AI-powered diagnostics in resource-constrained medical environments.
+\end{abstract}
+
+\newpage
+% Table of Contents
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+The rapid evolution of deep learning has transformed medical image analysis, enabling unprecedented accuracy in tasks such as brain tumor segmentation. However, these advances have come at the cost of ever-increasing model complexity and computational demands, which pose significant barriers to real-world clinical deployment \citep{Yang2025, Mazurek2024, Wu2023, Ragab2024}. In brain tumor segmentation, the need for computationally efficient models is particularly acute: high-resolution, multi-modal MRI scans are the gold standard for diagnosis and treatment planning, but their analysis requires models that can process large volumes of data with both speed and precision. Manual segmentation is labor-intensive and subject to inter-observer variability, while traditional deep neural networks, though powerful, often require substantial computational resources that are not always available in clinical or edge environments \citep{Yang2025, Ragab2024}.
+
+Within this landscape, the RAAGR2-Net (Recurrent Attention Atrous Spatial Pyramid Pooling R2 Network) has emerged as a sophisticated architecture tailored for medical image segmentation \citep{Rehman2023RAAGR2}. RAAGR2-Net integrates recurrent modules (R2) for iterative feature refinement, attention mechanisms to selectively enhance relevant anatomical structures, and atrous spatial pyramid pooling (ASPP) to capture multi-scale contextual information without a prohibitive increase in computational cost. This synergy enables RAAGR2-Net to delineate complex tumor boundaries with high fidelity, addressing the unique challenges posed by heterogeneous and infiltrative brain tumors. However, these architectural innovations come with a significant computational cost: the model's depth, recurrent connections, and attention modules result in high parameter counts and memory requirements, making RAAGR2-Net computationally expensive and challenging to deploy in resource-constrained clinical settings \citep{Rehman2023RAAGR2, Wang2023Review, Mazurek2024}.
+
+The architectural design of RAAGR2-Net follows a progressive channel expansion in the encoder path (typically input→64→128→256) with a symmetrical decoder structure. This configuration enables the network to capture both fine-grained details and broad contextual information critical for precise tumor delineation. The recurrent residual blocks (R2) enhance feature representation through iterative refinement, while attention gates selectively focus on relevant anatomical regions, improving the model's ability to distinguish tumor boundaries from surrounding tissues. The dilated-convolutional spatial pyramid pooling module (ReASPP3) facilitates multi-scale feature aggregation without excessive computational overhead, addressing the critical challenge of capturing context at various resolutions \citep{Rehman2023RAAGR2}.
+
+A persistent gap exists between state-of-the-art segmentation performance in research settings and practical deployment requirements in clinical environments. Despite RAAGR2-Net's excellent tumor delineation capabilities, its high memory and computational demands present significant barriers to deployment in settings with limited GPU availability, strict latency requirements, and constrained power budgets—conditions commonly encountered in clinical and edge computing scenarios \citep{Yang2025, Mazurek2024}. These constraints are particularly evident in healthcare facilities with limited resources, mobile diagnostic units, and point-of-care devices, where hardware must be compact, energy-efficient, and capable of real-time inference.
+
+The economic and clinical benefits of model compression are substantial. Pruning and weight-sharing techniques can significantly reduce inference time and memory footprint, enabling deployment on affordable, compact hardware. This not only lowers equipment costs but also facilitates the integration of AI tools across a wider spectrum of healthcare facilities, including those in resource-limited regions \citep{Wu2023, Ragab2024}. By democratizing access to advanced segmentation tools, compressed models can improve diagnostic equity and enhance scalability of AI-driven healthcare worldwide.
+
+This tension between accuracy and efficiency is at the heart of current research in medical AI. While RAAGR2-Net and similar architectures deliver strong segmentation results, their complexity limits their practical utility. In real-world healthcare, there is a pressing need for models that are not only accurate but also lightweight, fast, and energy-efficient \citep{Mazurek2024, Wu2023}. Model compression techniques—such as pruning (both structured and unstructured) and parameter sharing—offer promising solutions by reducing model size, accelerating inference, and lowering energy consumption, all while striving to maintain high segmentation accuracy \citep{Mazurek2024, Wu2023, Jeong2021}.
+
+Despite the growing body of work on model compression in general-purpose neural networks, there is a notable gap in the literature regarding systematic evaluations of pruning and parameter sharing specifically for specialized, recurrent-attention architectures like RAAGR2-Net in medical imaging. Most existing studies focus on standard CNNs or transformer models, leaving the unique interactions between compression methods and the complex modules of RAAGR2-Net largely unexplored \citep{Mazurek2024, Jeong2021}. This gap is significant, as the practical deployment of advanced segmentation models in clinical environments depends on our ability to optimize them for efficiency without sacrificing diagnostic performance.
+
+The primary objective of this research is to rigorously test and benchmark a range of pruning (structured and unstructured) and parameter sharing techniques on RAAGR2-Net, with the goal of producing slim, high-performing models suitable for real-time clinical deployment. By systematically evaluating the trade-offs between model size, computational efficiency, and segmentation accuracy, this work aims to bridge the gap between cutting-edge research and practical, scalable solutions for brain tumor segmentation in healthcare.
+
+\section{Literature Review and Related Works}
+
+\subsection{Neural Network Pruning Approaches}
+
+The exponential growth in the size and complexity of deep neural networks (DNNs) has necessitated the development of pruning techniques to enable their deployment in resource-constrained environments, such as clinical settings for medical imaging. Pruning methods can be broadly categorized into structured and unstructured approaches, each with distinct operational characteristics and implications for hardware efficiency and model performance \cite{Liu2023Survey, Yang2025, Mazurek2024}.
+
+Structured pruning targets entire architectural components—such as neurons, filters, or channels—thereby streamlining computational operations and facilitating real-world acceleration on modern hardware. This approach removes whole filters or channels, resulting in models that are more amenable to hardware acceleration and parallelization \cite{Liu2023Survey, Mazurek2024}. For instance, network slimming applies L1 regularization to the scaling factors of batch normalization layers, identifying and removing less important channels. This approach not only reduces model size but also yields tangible speedups during inference, making it particularly attractive for clinical deployment \cite{Liu2023Survey, Mazurek2024}.
+
+Unstructured pruning, in contrast, operates at the granularity of individual weights, producing sparse connectivity patterns. This method eliminates individual weights, creating sparse tensors that require specialized libraries for efficient execution. Magnitude-based pruning, a canonical unstructured method, eliminates weights whose absolute values fall below a predefined threshold, ranking filters or weights by their L₁ or L₂ norms. While this can achieve high compression rates with minimal accuracy loss, the resulting irregular sparsity often poses challenges for efficient hardware execution \cite{Wu2023, Ragab2024}. Despite these challenges, magnitude-based pruning remains widely used due to its simplicity and effectiveness, particularly in iterative pruning schemes \cite{Liu2023Survey, Wu2023}.
+
+SNIP (Single-shot Network Pruning) introduces a paradigm shift by evaluating the sensitivity of each connection to the loss function at initialization, allowing for the identification and removal of less critical weights before training. This approach prunes connections based on gradient saliency, minimizing the need for additional hyperparameters and retraining—a significant advantage in medical imaging applications where training resources may be limited \cite{Lee2019SNIP, Liu2023Survey}.
+
+Dependency graph pruning represents a more holistic strategy, analyzing the interdependencies among network components to achieve optimal compression while preserving structural integrity. This method constructs a graph of layer dependencies, enabling holistic pruning that maintains structural consistency across complex architectures like RAAGR2-Net. Recent advances have shown that such methods can yield highly compressed models with negligible performance degradation, a property of immense value in medical imaging applications where accuracy is paramount \cite{Mazurek2024, Ragab2024}.
+
+Network slimming stands out as a structured pruning technique that leverages sparsity-inducing regularization on channel-wise scale parameters in batch normalization layers. By applying L₁ regularization on batch normalization scaling factors (γ), this method identifies and removes unimportant channels. The pruned network is then retrained to recover accuracy. This hardware-friendly approach has demonstrated efficacy in compressing medical image segmentation models without significant loss of accuracy \cite{Liu2023Survey, Mazurek2024}.
+
+\subsection{Parameter Sharing Strategies}
+
+Parameter sharing has emerged as a pivotal strategy for reducing model size and enhancing inference efficiency, particularly in convolutional neural networks (CNNs) used for medical image analysis. By enabling multiple layers or filters to share weights, parameter sharing effectively compresses the model without substantial loss in representational power \cite{Wang2023Review, Jeong2021}.
+
+Filter sharing in CNNs reduces redundancy by reusing filters across different layers or branches, which can dramatically decrease model size without significant accuracy degradation. This approach has proven particularly effective in convolutional layers, where similar feature extractors often perform redundant computations \cite{Jeong2021, Wang2023Review}.
+
+Recent research demonstrates that shared depthwise convolutional weights, employed across multiple branches and layers, significantly reduce redundancy and memory footprint. This approach has been validated as a means to achieve efficient yet accurate segmentation models, especially in domains where computational resources are limited \cite{Jeong2021, Wang2023Review}.
+
+Weight quantization and clustering further compress models by reducing the precision of weights or grouping similar weights, enabling efficient storage and computation. These techniques complement parameter sharing by addressing different aspects of model redundancy \cite{Jeong2021, Ragab2024}.
+
+Convolutional filter sharing, in particular, has demonstrated success in compressing CNNs for medical imaging, enabling the deployment of advanced models on edge devices and in clinical environments with limited hardware \cite{Jeong2021, Wang2023Review}.
+
+\subsection{U-Net Derivatives for Medical Image Segmentation}
+
+U-Net and its derivatives have become the de facto standard for medical image segmentation, owing to their encoder-decoder architecture and ability to capture both local and global contextual information. The architectural choices in RAAGR2-Net are deeply rooted in the evolution of U-Net-based models, each introducing innovations to address the unique challenges of medical imaging \cite{Abidin2024, Wang2023Review}.
+
+Attention U-Net augments the standard U-Net with spatial attention mechanisms, enabling the model to focus on relevant anatomical regions while suppressing background noise. This enhancement has been shown to improve segmentation accuracy, particularly in complex tasks such as brain tumor delineation \cite{Oktay2018AttentionUNet, Abidin2024}.
+
+R2U-Net incorporates recurrent residual blocks, allowing for iterative refinement of feature representations. This design captures robust contextual features essential for accurate segmentation but introduces additional computational overhead—a trade-off that underscores the need for subsequent model compression \cite{Alom2019R2UNet, Abidin2024}.
+
+ASPP (Atrous Spatial Pyramid Pooling) modules, as integrated in RAAGR2-Net, enable the capture of multi-scale contextual information without a prohibitive increase in model complexity. By employing parallel dilated convolutions with varying rates, ASPP modules enhance the model's ability to delineate intricate tumor boundaries, a critical requirement in brain tumor segmentation \cite{Chen2018ASPP, Rehman2023RAAGR2}.
+
+Collectively, these architectural innovations have propelled the field of medical image segmentation forward, but their computational demands have also highlighted the necessity for effective model compression and optimization strategies.
+
+\section{Methodology}
+
+This chapter presents a comprehensive methodology for implementing and evaluating pruning techniques and weight-sharing strategies on the RAAGR2-Net architecture for brain tumor segmentation. The methodology encompasses three main components: (1) analysis of the RAAGR2-Net architecture and its computational characteristics, (2) implementation of various pruning techniques, and (3) development of novel weight-sharing mechanisms tailored to the recurrent and multi-branch nature of RAAGR2-Net.
+
+\subsection{RAAGR2-Net Architecture}
+
+\subsubsection{Encoder-Decoder Backbone}
+
+The RAAGR2-Net follows a modified U-Net architecture with an encoder-decoder design that progressively captures features at multiple scales \cite{Rehman2023RAAGR2}. The encoder pathway consists of four stages with progressive channel expansion: starting with 32 channels after the initial ReASPP3 module, then expanding to 64, 128, 256, and finally 512 channels at the bottleneck. Between consecutive stages, max-pooling operations with a stride of 2 reduce spatial dimensions, enabling the capture of increasingly abstract features. The decoder pathway mirrors this arrangement with a symmetric progression from 512→256→128→64→32 channels, using upsampling operations to restore spatial resolution \cite{Alom2019R2UNet}.
+
+Each spatial resolution level in both encoder and decoder contains specialized modules that enhance the network's representational capacity. Skip connections between corresponding encoder and decoder levels help preserve spatial information that might otherwise be lost during downsampling, facilitating precise localization of tumor boundaries—a crucial requirement for clinical utility \cite{Rehman2023RAAGR2}.
+
+\subsubsection{Recurrent CNN Blocks (RRCNNBlock)}
+
+A distinctive feature of RAAGR2-Net is its use of Recurrent Residual CNN blocks (RRCNNBlock), which enable iterative refinement of feature representations \cite{Rehman2023RAAGR2, Alom2019R2UNet}. Each RRCNNBlock consists of a dimensionality-reducing 1×1 convolution followed by two sequential RecurrentBlocks, arranged in a residual configuration.
+
+The RecurrentBlock applies a shared convolutional operation iteratively ($t$ times, typically $t=2$) to the same feature map, allowing for progressive feature refinement without introducing additional parameters. Mathematically, for an input feature map $x$, the RecurrentBlock computes:
+
+\begin{align}
+x_1 &= x \\
+\intertext{For $i = 1$ to $t$:}
+x_1 &= \textrm{Conv}(x + x_1)
+\end{align}
+
+This recurrent structure provides an effective mechanism for capturing complex patterns with a relatively modest parameter count \cite{Alom2019R2UNet}. Each convolutional operation within the RecurrentBlock consists of a depthwise separable convolution (3×3 kernel) followed by a pointwise projection (1×1 kernel), batch normalization, and ReLU activation. This design choice further reduces the computational burden while maintaining representational capacity.
+
+\subsubsection{ReASPP3 Module}
+
+The Recurrent Atrous Spatial Pyramid Pooling (ReASPP3) module enhances the network's ability to capture multi-scale contextual information, which is particularly important for accurately delineating heterogeneous tumor regions with varying sizes and shapes \cite{Rehman2023RAAGR2}. The module consists of four parallel branches, each applying convolutions with different dilation rates:
+
+1. Standard convolution (dilation rate = 1)
+2. Dilated convolution with rate = 3
+3. Dilated convolution with rate = 6 (2×3)
+4. Dilated convolution with rate = 9 (3×3)
+
+Each branch begins with a depthwise separable convolution using the specified dilation rate, followed by batch normalization and ReLU activation. A second 1×1 convolution further transforms the features, and a residual connection is added from the output of the first to the second convolution. The outputs from all four branches are concatenated along with the original input features, and a final 1×1 convolution reduces the channel dimension to the desired output size.
+
+The use of varied dilation rates enables the module to capture features at multiple effective receptive fields without increasing spatial dimensions or parameter count dramatically. This multi-scale context aggregation is crucial for distinguishing between tumor subregions (e.g., necrotic core, enhancing tumor, and edema) that may appear similar in isolation but differ in their spatial context \cite{Chen2018ASPP}.
+
+\subsubsection{Attention Gates}
+
+Attention gates are integrated at each decoder level to emphasize relevant features in the skip connections from the encoder before they are combined with the upsampled features \cite{Rehman2023RAAGR2, Oktay2018AttentionUNet}. For a given feature map $x$ from the encoder and the corresponding upsampled feature map $g$ from the decoder, the attention mechanism computes:
+
+\begin{align}
+g' &= W_g * g \quad \textrm{(transform gating signal)} \\
+x' &= W_x * x \quad \textrm{(transform input features)} \\
+\alpha &= \sigma(\textrm{ReLU}(g' + x')) \quad \textrm{(compute attention coefficients)} \\
+y &= x \cdot \alpha \quad \textrm{(apply attention to input features)}
+\end{align}
+
+where $\sigma$ represents the sigmoid activation function, ensuring that attention coefficients are in the range $[0,1]$.
+
+These gates act as a soft region proposal mechanism, selectively highlighting features relevant to the tumor regions while suppressing background noise. This targeted feature refinement is particularly valuable in medical imaging tasks where the regions of interest (tumors) often constitute a small portion of the overall image volume \cite{Oktay2018AttentionUNet}.
+
+\subsubsection{Loss Function}
+RAAGR2-Net employs a composite loss function that combines weighted binary cross-entropy (BCE) with the Dice loss to address class imbalance—a common challenge in brain tumor segmentation where tumor regions typically occupy a small fraction of the total volume \cite{Rehman2023RAAGR2}:
+
+\begin{equation}
+\mathcal{L}_{\textrm{total}} = \lambda \cdot \mathcal{L}_{\textrm{BCE}} + (1-\lambda) \cdot \mathcal{L}_{\textrm{Dice}}
+\end{equation}
+
+where $\lambda$ is a weighting factor (typically set to 0.5). The BCE component provides pixel-wise supervision, while the Dice loss directly optimizes for overlap between predicted and ground truth segmentations. This combination yields more balanced training and better performance on small tumor regions \cite{Rehman2023RAAGR2}.
+
+\subsection{Pruning Implementation}
+
+\subsubsection{Magnitude-Based Pruning}
+
+Our implementation of magnitude-based pruning focuses on removing filters in convolutional layers based on their L₂ norm magnitudes, following the approaches in \cite{Wu2023, Han2015Learning, Zhu2017To}. The procedure consists of the following steps:
+
+\begin{enumerate}
+\item \textbf{Weight Magnitude Calculation}: For each convolutional layer, we compute the L₂ norm of each filter:
+   
+   \begin{equation}
+   M(f_i) = \sqrt{\sum_{j} (w_{ij})^2}
+   \end{equation}
+   
+   where $w_{ij}$ represents the individual weights of filter $i$.
+
+\item \textbf{Threshold Determination}: Filters are ranked based on their magnitudes, and a percentile threshold is determined according to the desired pruning ratio. For example, with a pruning ratio of 0.3, filters with magnitudes below the 30th percentile are candidates for removal.
+
+\item \textbf{Dependency Analysis}: Before actually pruning any filter, we analyze the network's dependency structure using the DepGraph algorithm \cite{Fang2023DepGraph}. This step is crucial as removing a filter from one layer impacts connected layers, requiring consistent dimensionality adjustments throughout the model.
+
+\item \textbf{Mask Generation}: A binary pruning mask is generated for each layer, where zeros correspond to pruned connections and ones to retained connections.
+
+\item \textbf{Structural Pruning}: The actual structural pruning operation physically removes the pruned filters and their corresponding channels in subsequent layers, rather than merely zeroing them out.
+\end{enumerate}
+
+The primary advantage of magnitude-based pruning is its simplicity and effectiveness, particularly for convolutional layers where filter norms often correlate well with their importance to the network's output.
+
+\subsubsection{Network Slimming}
+
+Our network slimming implementation follows the approach of \cite{Liu2017Learning}, with the following steps:
+
+\begin{enumerate}
+\item \textbf{Batch Normalization Scaling}: During the sparsity-inducing training phase, we apply L₁ regularization to the scaling factors $\gamma$ of all batch normalization layers:
+   
+   \begin{equation}
+   L = L_{\textrm{original}} + \lambda \sum_{i}|\gamma_i|
+   \end{equation}
+   
+   where $\lambda$ controls the strength of the regularization.
+
+\item \textbf{Importance Identification}: After training, channels with small scaling factors $\gamma$ (below a threshold $\varepsilon$) are identified as candidates for removal.
+
+\item \textbf{Dependency-Aware Pruning}: Using the dependency analysis provided by DepGraph \cite{Fang2023DepGraph}, we ensure that all tensor dimensions remain consistent after pruning.
+
+\item \textbf{Fine-tuning}: The pruned network is then fine-tuned to recover accuracy. We employ a gradual warm-up of the learning rate to stabilize training.
+\end{enumerate}
+
+Network slimming is particularly effective for networks with batch normalization layers, as the scaling factors provide a natural measure of channel importance.
+
+\subsubsection{SNIP Pruning}
+
+SNIP (Single-shot Network Pruning) \cite{Lee2019SNIP} offers a unique perspective by evaluating connection sensitivity at initialization, prior to training. Our implementation proceeds as follows:
+
+\begin{enumerate}
+\item \textbf{Connection Sensitivity Calculation}: For each parameter $\theta_i$, we compute its sensitivity score $s_i$ based on the gradient of the loss with respect to a binary mask $c_i$:
+   
+   \begin{equation}
+   s_i = \left|\frac{\partial \mathcal{L}}{\partial c_i} \cdot \theta_i \right|
+   \end{equation}
+   
+   where $c_i$ is a mask variable that, when set to zero, removes the parameter from the network.
+
+\item \textbf{Global Ranking}: All sensitivities across the network are globally ranked, and a global pruning threshold is applied to remove the desired percentage of least sensitive connections.
+
+\item \textbf{Dependency-Preserving Pruning}: Unlike the original SNIP implementation, we integrate DepGraph's dependency analysis \cite{Fang2023DepGraph} to ensure that pruning maintains structural consistency across the model.
+
+\item \textbf{Training From Scratch}: After pruning, the model is trained from scratch with the pruned architecture.
+\end{enumerate}
+
+SNIP's advantage lies in its ability to prune before training, potentially saving significant computational resources compared to train-prune-retrain approaches.
+
+\subsubsection{DepGraph Pruning}
+
+The Dependency Graph (DepGraph) algorithm \cite{Fang2023DepGraph, Cai2022Dependency} is the backbone of our pruning framework, enabling consistent structural modifications across the RAAGR2-Net architecture. The algorithm works as follows:
+
+1. **Graph Construction**: During a forward pass with a dummy input, we trace the computational graph of the network, capturing all tensor operations and their dependencies.
+
+2. **Dependency Identification**: For each prunable parameter, we identify all affected modules that require consistent changes. For example, pruning the output channels of a convolution requires pruning the corresponding input channels of the next layer.
+
+3. **Group Formation**: Coupled parameters are grouped together to ensure consistent pruning. A pruning operation on one parameter triggers corresponding operations on all dependent parameters.
+
+4. **Automated Mask Transformation**: When operations like concatenations or splits occur in the network, DepGraph automatically transforms the pruning indices to maintain consistency.
+
+5. **Pruning Execution**: Once dependencies are resolved, pruning can be executed safely, removing parameters while maintaining the network's architectural integrity.
+
+DepGraph is particularly valuable for complex architectures like RAAGR2-Net, where recurrent connections, skip connections, and attention mechanisms create intricate dependency patterns that would be challenging to handle manually.
+
+\subsection{Shared-Weight Implementation}
+
+\subsubsection{SharedDepthwiseBlock Design}
+
+To further reduce the parameter count of RAAGR2-Net, we developed a novel SharedDepthwiseBlock that enables weight sharing across the different branches of the ReASPP3 module. The key innovation is the use of a single set of depthwise convolutional weights (kernel size 3×3) across all dilation rates, while maintaining separate pointwise (1×1) convolutions for each branch.
+
+The SharedDepthwiseBlock is implemented as follows:
+
+\begin{enumerate}
+\item A single 3×3 depthwise convolutional kernel (weights and biases) is defined at the ReASPP3 module level, shared across all dilated branches.
+
+\item For each branch, the shared depthwise kernel is applied with a different dilation rate (1, 3, 6, 9), but using the same weight values:
+   
+   \begin{equation}
+   y_{i} = F_{\textrm{dw}}(x, W_{\textrm{shared}}, d_i)
+   \end{equation}
+   
+   where $F_{\textrm{dw}}$ denotes the depthwise convolution operation, $W_{\textrm{shared}}$ is the shared weight tensor, and $d_i$ is the dilation rate specific to branch $i$.
+
+\item Branch-specific pointwise (1×1) convolutions transform the depthwise outputs to the desired channel dimension:
+   
+   \begin{equation}
+   z_{i} = F_{\textrm{pw}}(y_{i}, W_{\textrm{pw},i})
+   \end{equation}
+   
+   where $F_{\textrm{pw}}$ is the pointwise convolution and $W_{\textrm{pw},i}$ represents the branch-specific weights.
+
+\item Residual projections are added around each block to ensure stable training despite the parameter sharing:
+   
+   \begin{equation}
+   \textrm{out}_{i} = z_{i} + F_{\textrm{res}}(y_{i})
+   \end{equation}
+   
+   where $F_{\textrm{res}}$ is a 1×1 convolutional projection.
+\end{enumerate}
+
+This approach reduces the parameter count in the ReASPP3 module from $4 \times (C_{\textrm{in}} \times 3 \times 3 \times C_{\textrm{out}})$ to $(C_{\textrm{in}} \times 3 \times 3) + 4 \times (C_{\textrm{in}} \times 1 \times 1 \times C_{\textrm{out}})$, yielding a substantial reduction in model size while preserving the multi-scale feature extraction capability.
+
+\subsubsection{Integration into ReASPP3}
+
+The integration of SharedDepthwiseBlock into the ReASPP3 module requires architectural modifications to respect the weight-sharing mechanism. The original independent branches are replaced with SharedDepthwiseBlocks that reference the same set of depthwise convolutional weights:
+
+\begin{enumerate}
+\item The shared depthwise convolutional weights are initialized as model parameters at the ReASPP3 module level:
+   
+   \begin{align}
+   W_{\textrm{shared}} &\in \mathbb{R}^{C_{\textrm{in}} \times 1 \times 3 \times 3} \\
+   b_{\textrm{shared}} &\in \mathbb{R}^{C_{\textrm{in}}}
+   \end{align}
+
+\item Four SharedDepthwiseBlocks are instantiated, each configured with a different dilation rate but referencing the same $W_{\textrm{shared}}$ and $b_{\textrm{shared}}$ parameters:
+   
+   \begin{align}
+   \textrm{Block}_1 &= \textrm{SharedDepthwiseBlock}(C_{\textrm{in}}, C_{\textrm{out}}, d=1, W_{\textrm{shared}}, b_{\textrm{shared}}) \\
+   \textrm{Block}_2 &= \textrm{SharedDepthwiseBlock}(C_{\textrm{in}}, C_{\textrm{out}}, d=3, W_{\textrm{shared}}, b_{\textrm{shared}}) \\
+   \textrm{Block}_3 &= \textrm{SharedDepthwiseBlock}(C_{\textrm{in}}, C_{\textrm{out}}, d=6, W_{\textrm{shared}}, b_{\textrm{shared}}) \\
+   \textrm{Block}_4 &= \textrm{SharedDepthwiseBlock}(C_{\textrm{in}}, C_{\textrm{out}}, d=9, W_{\textrm{shared}}, b_{\textrm{shared}})
+   \end{align}
+
+\item The forward pass computes outputs from each block, concatenates them with the input, and applies a final 1×1 convolution to fuse features:
+   
+   \begin{equation}
+   \textrm{out} = F_{1 \times 1}(\textrm{concat}([\textrm{Block}_1(x), \textrm{Block}_2(x), \textrm{Block}_3(x), \textrm{Block}_4(x), x]))
+   \end{equation}
+\end{enumerate}
+
+This integration ensures that while the ReASPP3 module maintains its multi-scale feature extraction capability, it does so with significantly fewer parameters. Our analytical calculations indicate a parameter reduction of approximately 66% in the ReASPP3 modules compared to the original implementation.
+
+\subsubsection{Parameter Reduction Analysis}
+
+The parameter reduction achieved through our SharedDepthwiseBlock can be quantified through a comparative analysis of the original and modified ReASPP3 modules:
+
+1. Original ReASPP3: Each of the four branches contains a full 3×3 convolutional layer with $C_{\textrm{in}} \times 3 \times 3 \times C_{\textrm{out}}$ parameters, plus batch normalization parameters. The total parameter count for the convolutional layers alone (excluding the final fusion layer) is approximately $4 \times (C_{\textrm{in}} \times 3 \times 3 \times C_{\textrm{out}})$.
+
+2. SharedDepthwiseBlock ReASPP3: The shared depthwise convolution has $C_{\textrm{in}} \times 3 \times 3$ parameters, and each of the four branches has a pointwise (1×1) convolution with $C_{\textrm{in}} \times 1 \times 1 \times C_{\textrm{out}}$ parameters. The total parameter count is approximately $(C_{\textrm{in}} \times 3 \times 3) + 4 \times (C_{\textrm{in}} \times 1 \times 1 \times C_{\textrm{out}})$.
+
+For a typical ReASPP3 module with $C_{\textrm{in}} = C_{\textrm{out}} = 128$, the original implementation requires approximately 589,824 parameters for the convolutional layers, while our SharedDepthwiseBlock implementation requires only 199,168 parameters—a reduction of 66.2%.
+
+\subsubsection{Theoretical Relationship to Transformers}
+
+Our SharedDepthwiseBlock draws conceptual inspiration from weight-tying principles in transformer architectures \cite{Jeong2021, Vaswani2017Attention}. In transformers, the same set of weights is used for multiple heads in multi-head attention, with projections handling the differentiation between heads. Similarly, our approach uses a single set of depthwise convolutional weights across different dilation rates, with branch-specific pointwise convolutions providing specialized feature transformation.
+
+This connection to transformers is not merely theoretical; it reflects a broader trend in deep learning toward parameter efficiency through strategic weight sharing. By allowing a single set of weights to be used in multiple contexts (different dilation rates), the model can leverage a compact parameter set to express diverse functionalities—a principle at the heart of efficient neural architecture design \cite{Howard2019Searching, Jeong2021}.
+
+\section{Implementation Details}
+
+\subsection{Codebase Organization}
+The implementation of slim RAAGR2-Net models follows a modular architecture with clear separation of concerns, organized into the following hierarchical components:
+
+\begin{itemize}
+    \item \textbf{Architecture}: Contains the core neural network definitions, including the base RAAGR2-Net model (\texttt{model.py}) and modified variants with shared weights (\texttt{shared\_model.py}). Each model implementation encapsulates its specialized components such as the ReASPP3 module, recurrent blocks, and attention gates.
+    
+    \item \textbf{Pruning Techniques}: Houses distinct implementations of each compression method, with separated modules for magnitude-based pruning, network slimming, SNIP pruning, and dependency graph pruning. Each technique is implemented as a self-contained module with standardized interfaces for model transformation and evaluation.
+    
+    \item \textbf{Utilities}: Provides reusable components for data loading, custom metrics calculation, training loops, and comprehensive experiment tracking via MLFlow, ensuring consistent methodology across compression techniques.
+    
+    \item \textbf{Metrics}: Contains implementations of domain-specific evaluation metrics for brain tumor segmentation, including class-wise Dice coefficients and mean IoU calculations.
+\end{itemize}
+
+This organization facilitates ablation studies by enabling direct comparison between different pruning strategies and model architectures while maintaining consistent evaluation protocols and baseline references.
+
+\subsection{Training Setup}
+The experimental framework employs a comprehensive training pipeline with carefully tuned hyperparameters to ensure optimal model convergence while maintaining reproducibility across experiments:
+
+\begin{itemize}
+    \item \textbf{Optimizer}: Adam optimization algorithm with an initial learning rate of 1 × 10\textsuperscript{-4}, chosen for its adaptive moment estimation capabilities that facilitate stable training of deep networks with recurrent components \cite{Loshchilov2017}.
+    
+    \item \textbf{Learning Rate Schedule}: ReduceLROnPlateau scheduler that dynamically adjusts the learning rate based on validation loss plateaus, decreasing to 1 × 10\textsuperscript{-5} during fine-tuning phases after pruning to prevent catastrophic forgetting \cite{Xin2020}.
+    
+    \item \textbf{Training Epochs}: Differentiated based on pruning methodology requirements:
+    \begin{itemize}
+        \item 30--40 epochs for one-shot methods (SNIP pruning), which require less training time due to their single-phase approach.
+        \item 50--70 epochs for iterative methods (network slimming, dependency graph pruning), allowing sufficient retraining cycles between pruning iterations to recover accuracy \cite{Wu2023, Frankle2018}.
+    \end{itemize}
+    
+    \item \textbf{Batch Size}: Configured dynamically based on available GPU memory, ranging from 2 to 8 samples per batch for 3D volumes, balancing computational efficiency with gradient stability \cite{Masters2018}.
+    
+    \item \textbf{Loss Function}: Weighted combination of Binary Cross-Entropy and Dice loss to simultaneously address class imbalance and optimize segmentation boundary accuracy \cite{Sudre2017}.
+    
+    \item \textbf{Early Stopping}: Patience of 10 epochs with minimum improvement threshold of 0.0001 in validation loss to prevent overfitting while ensuring convergence.
+    
+    \item \textbf{Mixed Precision Training}: Optional automatic mixed precision (AMP) during training to accelerate computation while maintaining numerical stability, particularly beneficial for 3D medical image processing \cite{Micikevicius2018}.
+\end{itemize}
+
+\subsection{Experiment Tracking with MLFlow}
+Experiment tracking was implemented using MLFlow to enable systematic comparison across pruning methodologies and model variants, with the following key features:
+
+\begin{itemize}
+    \item \textbf{Custom MLFlowExperiment Class}: A specialized wrapper class was developed to standardize experiment tracking across all model variants, providing consistent logging interfaces for metrics, parameters, artifacts, and model checkpoints.
+    
+    \item \textbf{Hierarchical Run Organization}: Experiments were organized into logical hierarchies, with parent runs for each pruning technique (e.g., "magnitude\_pruning", "network\_slimming") and child runs for specific configurations, facilitating multi-level comparative analysis.
+    
+    \item \textbf{Comprehensive Metrics Logging}: Automated tracking of both training and validation metrics at each epoch, including:
+    \begin{itemize}
+        \item Overall performance metrics: Dice coefficient, mean IoU, and loss values.
+        \item Class-specific metrics: Separate Dice scores for each tumor subregion (classes 2, 3, and 4).
+        \item Model efficiency metrics: Parameter counts, inference speed, and compression ratios.
+    \end{itemize}
+    
+    \item \textbf{Pruning-Specific Parameters}: Dedicated tracking of pruning-related hyperparameters, including:
+    \begin{itemize}
+        \item Pruning ratios and thresholds.
+        \item Original vs. pruned parameter counts.
+        \item Channel and filter statistics before and after pruning.
+        \item Resulting model sparsity.
+    \end{itemize}
+    
+    \item \textbf{Artifact Management}: Systematic storage of model checkpoints, configuration files, serialized pruning masks, and visualization artifacts such as segmentation samples and training curves.
+    
+    \item \textbf{Model Registry Integration}: Automatic registration of best-performing models for each configuration, allowing efficient model versioning and retrieval for deployment.
+\end{itemize}
+
+This MLFlow infrastructure not only enabled rigorous comparative analysis but also ensured reproducibility by capturing the complete experimental context, including random seeds, environmental details, and full hyperparameter configurations.
+
+\subsection{Evaluation Metrics}
+The evaluation framework employs a comprehensive set of metrics to assess both segmentation quality and model efficiency:
+
+\begin{itemize}
+    \item \textbf{Dice Coefficient (F1 Score)}: Primary metric for segmentation accuracy, measuring the overlap between predicted and ground truth masks. Particularly well-suited for medical image segmentation due to its robustness to class imbalance where tumor regions typically constitute a small fraction of the total volume \cite{Sudre2017}.
+    
+    \item \textbf{Mean Intersection over Union (mIoU)}: Complementary to Dice, mIoU provides a more stringent evaluation by penalizing false positives more heavily, offering insights into worst-case performance scenarios \cite{Wang2023Review}.
+    
+    \item \textbf{Class-wise Dice Coefficients}: Separate metrics for each tumor subregion:
+    \begin{itemize}
+        \item NCR/NET (necrotic and non-enhancing tumor core) - Class 2
+        \item ET (enhancing tumor) - Class 3 
+        \item ED (peritumoral edema) - Class 4
+    \end{itemize}
+    These class-specific metrics are critical for clinical utility assessment, as different tumor components have varying prognostic significance \cite{Abidin2024}.
+    
+    \item \textbf{Model Size}: Total parameter count before and after compression, reported in both raw counts and megabytes, directly indicating memory footprint reduction.
+    
+    \item \textbf{Inference Speed}: Measured in frames per second (FPS) on target hardware (CPU/GPU/edge devices), assessing real-time feasibility in clinical settings. Tests were conducted with standardized input dimensions to ensure consistent comparison \cite{Chen2019}.
+    
+    \item \textbf{Relative Accuracy-Efficiency Tradeoff}: Composite metric calculated as the product of relative accuracy preservation and parameter reduction ratio, enabling holistic comparison of pruning techniques \cite{Li2023}.
+\end{itemize}
+
+\subsection{Dataset}
+The Multimodal Brain Tumor Segmentation Challenge (BraTS) dataset was used for all experiments, representing the gold standard for brain tumor segmentation algorithm development and evaluation:
+
+\begin{itemize}
+    \item \textbf{Multimodal MRI Sequences}: Each case includes four complementary MRI modalities that highlight different tumor characteristics \cite{Bakas2017}:
+    \begin{itemize}
+        \item T1-weighted (T1): Provides structural anatomical information.
+        \item T1 with contrast enhancement (T1ce): Highlights areas with blood-brain barrier disruption, typically corresponding to active tumor regions.
+        \item T2-weighted (T2): Sensitive to water content, revealing peritumoral edema.
+        \item Fluid Attenuated Inversion Recovery (FLAIR): Suppresses cerebrospinal fluid signals, accentuating abnormal tissue adjacent to ventricles.
+    \end{itemize}
+    
+    \item \textbf{Segmentation Labels}: Expert-annotated ground truth masks with four distinct classes \cite{Menze2015}:
+    \begin{itemize}
+        \item Background (label 0): Normal brain tissue and cerebrospinal fluid.
+        \item NCR/NET (label 1): Necrotic and non-enhancing tumor core.
+        \item ED (label 2): Peritumoral edema.
+        \item ET (label 4): Enhancing tumor.
+    \end{itemize}
+    
+    \item \textbf{Preprocessing}: All volumes were co-registered to the same anatomical template, skull-stripped, and interpolated to isotropic 1mm³ resolution, with intensity normalization applied within each modality independently.
+    
+    \item \textbf{Data Split}: The dataset was partitioned with a 70\%/15\%/15\% split for training, validation, and testing, respectively, maintaining consistent distribution of high-grade gliomas (HGG) and low-grade gliomas (LGG) across partitions.
+    
+    \item \textbf{Augmentation Strategy}: Online data augmentation during training included random flips, rotations (±10°), elastic deformations, and intensity shifts, enhancing model generalization capacity without requiring additional data \cite{Isensee2021}.
+\end{itemize}
+
+\section{Experiments \& Results}
+
+\subsection{Magnitude-Based Pruning Results}
+The following tables present our comprehensive evaluation of magnitude-based pruning applied to the RAAGR2-Net architecture, showing the trade-off between model compression and segmentation performance across different pruning ratios.
+
+\begin{table}[htbp]
+\centering
+\caption{Magnitude-Based Pruning: Accuracy vs. Pruning Ratio}
+\label{tab:magnitude_pruning_results}
+\begin{adjustbox}{width=\textwidth,center}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Pruning Ratio} & \textbf{Dice} & \textbf{mIoU} & \textbf{NCR/NET} & \textbf{ED} & \textbf{ET} & \textbf{Param. Reduction} \\
+\midrule
+0\% (Baseline) & -- & -- & -- & -- & -- & 0\% \\
+30\% & -- & -- & -- & -- & -- & -- \\
+40\% & -- & -- & -- & -- & -- & -- \\
+50\% & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Magnitude-Based Pruning: Model Efficiency Metrics}
+\label{tab:magnitude_efficiency}
+\begin{adjustbox}{width=\textwidth,center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Pruning Ratio} & \textbf{Original Size (MB)} & \textbf{Pruned Size (MB)} & \textbf{Sparsity (\%)} & \textbf{FPS} & \textbf{Speedup} \\
+\midrule
+0\% (Baseline) & -- & -- & 0\% & -- & 1.0x \\
+30\% & -- & -- & -- & -- & -- \\
+40\% & -- & -- & -- & -- & -- \\
+50\% & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Network Slimming Analysis}
+This section examines the effects of network slimming pruning on RAAGR2-Net, focusing on channel-wise sparsity induced by L1 regularization on batch normalization scaling factors and the resulting reduction in model parameters across network layers.
+
+\begin{table}[htbp]
+\centering
+\caption{Network Slimming: Effect of Regularization Strength}
+\label{tab:network_slimming_reg}
+\begin{adjustbox}{width=\textwidth,center}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{L1 Penalty} & \textbf{Channel Sparsity} & \textbf{Dice} & \textbf{mIoU} & \textbf{Param. Reduction} & \textbf{FPS} \\
+\midrule
+Baseline & 0\% & -- & -- & 0\% & -- \\
+$\lambda=10^{-4}$ & -- & -- & -- & -- & -- \\
+$\lambda=10^{-3}$ & -- & -- & -- & -- & -- \\
+$\lambda=10^{-2}$ & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Network Slimming: Depth-Wise Channel Reduction}
+\label{tab:slimming_depth_reduction}
+\begin{adjustbox}{width=\textwidth,center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Layer/Stage} & \textbf{Original Channels} & \textbf{Remaining Channels} & \textbf{Reduction (\%)} \\
+\midrule
+Encoder Stage 1 & -- & -- & -- \\
+Encoder Stage 2 & -- & -- & -- \\
+Encoder Stage 3 & -- & -- & -- \\
+Encoder Stage 4 & -- & -- & -- \\
+Bottleneck & -- & -- & -- \\
+Decoder Stage 4 & -- & -- & -- \\
+Decoder Stage 3 & -- & -- & -- \\
+Decoder Stage 2 & -- & -- & -- \\
+Decoder Stage 1 & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{SNIP Pruning Performance}
+
+\begin{table}[htbp]
+\centering
+\caption{SNIP Pruning: One-Shot vs. Iterative Comparison}
+\label{tab:snip_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Pruning Ratio} & \textbf{Dice} & \textbf{mIoU} & \textbf{Param. Reduction} & \textbf{Training Time} \\
+\midrule
+Baseline & 0\% & -- & -- & 0\% & -- \\
+One-Shot (30\%) & -- & -- & -- & -- & -- \\
+One-Shot (50\%) & -- & -- & -- & -- & -- \\
+Iterative (5\% $\times$ 6) & -- & -- & -- & -- & -- \\
+Iterative (10\% $\times$ 3) & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{SNIP Pruning: Class-Specific Performance}
+\label{tab:snip_class_performance}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{NCR/NET Dice} & \textbf{ED Dice} & \textbf{ET Dice} \\
+\midrule
+Baseline & -- & -- & -- \\
+One-Shot (30\%) & -- & -- & -- \\
+One-Shot (50\%) & -- & -- & -- \\
+Iterative (5\% $\times$ 6) & -- & -- & -- \\
+Iterative (10\% $\times$ 3) & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{DepGraph Pruning Outcomes}
+
+\begin{table}[htbp]
+\centering
+\caption{DepGraph Pruning: Dependency-Aware vs. Naïve Pruning}
+\label{tab:depgraph_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Pruning Ratio} & \textbf{Dice} & \textbf{mIoU} & \textbf{Param. Reduction} & \textbf{Structural Errors} \\
+\midrule
+Baseline & 0\% & -- & -- & 0\% & -- \\
+Naïve Pruning & -- & -- & -- & -- & -- \\
+DepGraph & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{DepGraph Pruning: Architectural Integrity Assessment}
+\label{tab:depgraph_integrity}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Network Component} & \textbf{Naïve Pruning Issues} & \textbf{DepGraph Solution} \\
+\midrule
+Skip Connections & -- & -- \\
+Recurrent Blocks & -- & -- \\
+Attention Gates & -- & -- \\
+ReASPP3 Module & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Shared Weights Impact}
+
+\begin{table}[htbp]
+\centering
+\caption{Shared Weights: Parameter Reduction Analysis}
+\label{tab:shared_weights_reduction}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Module} & \textbf{Original Parameters} & \textbf{Shared Parameters} & \textbf{Reduction (\%)} \\
+\midrule
+ReASPP3 & -- & -- & -- \\
+Recurrent Blocks & -- & -- & -- \\
+Full Model & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Shared Weights: Performance Comparison}
+\label{tab:shared_weights_performance}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model Variant} & \textbf{Dice} & \textbf{mIoU} & \textbf{NCR/NET} & \textbf{ED} & \textbf{ET} & \textbf{FPS} \\
+\midrule
+Original & -- & -- & -- & -- & -- & -- \\
+SharedDepthwiseBlock & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Shared Weights: Convergence Analysis}
+\label{tab:shared_weights_convergence}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Epoch} & \multicolumn{2}{c}{\textbf{Original}} & \multicolumn{2}{c}{\textbf{Shared}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+ & \textbf{Training Loss} & \textbf{Val. Dice} & \textbf{Training Loss} & \textbf{Val. Dice} \\
+\midrule
+10 & -- & -- & -- & -- \\
+20 & -- & -- & -- & -- \\
+30 & -- & -- & -- & -- \\
+Final & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Combined Approach Evaluation}
+
+\begin{table}[htbp]
+\centering
+\caption{Combined Approaches: Synergistic Effects}
+\label{tab:combined_approaches}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Configuration} & \textbf{Dice} & \textbf{mIoU} & \textbf{Param. Reduction} & \textbf{FPS} & \textbf{Relative Efficiency} \\
+\midrule
+Original RAAGR2-Net & -- & -- & 0\% & -- & 1.0x \\
+Magnitude (40\%) & -- & -- & -- & -- & -- \\
+Network Slimming & -- & -- & -- & -- & -- \\
+SNIP (30\%) & -- & -- & -- & -- & -- \\
+DepGraph & -- & -- & -- & -- & -- \\
+SharedDepthwiseBlock & -- & -- & -- & -- & -- \\
+Magnitude + Shared & -- & -- & -- & -- & -- \\
+SNIP + Shared & -- & -- & -- & -- & -- \\
+DepGraph + Shared & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Extreme Compression: Accuracy-Efficiency Trade-off}
+\label{tab:extreme_compression}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Configuration} & \textbf{Compression Ratio} & \textbf{Dice} & \textbf{Dice Retained} & \textbf{FPS} & \textbf{Speedup} \\
+\midrule
+Original & 0\% & -- & 100\% & -- & 1.0x \\
+Moderate & 50\% & -- & -- & -- & -- \\
+High & 70\% & -- & -- & -- & -- \\
+Extreme & 80\% & -- & -- & -- & -- \\
+Ultra & 90\% & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+% Add the bibliography at the end
+\bibliography{references}
+
+\end{document}

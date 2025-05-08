@@ -31,6 +31,7 @@ from utils.custom_metric import dice_coef, mean_iou
 import os
 import json
 import copy
+from src.CONFIGS import batch_size
 
 # Set device to Metal Performance Shaders (MPS) for accelerated computation on Mac
 device = torch.device("mps")
@@ -352,5 +353,54 @@ def main():
     print(f"Weight sparsity: {best_result['weight_sparsity']:.2f}%")
 
 
+
+
+def statistics():
+    device = torch.device("mps")
+
+    data_path = "data/"
+    val_dataset = BrainDataset(data_path, "val")
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+
+
+    shared_model = load_trained_model("model/pruned_pretrained/magnitude/dlu_net_model_epoch_10.pth")
+    original_model = load_trained_model("model/dlu_net_model_epoch_58.pth")
+
+    shared_model = shared_model.to(device)
+    original_model = original_model.to(device)
+
+
+    X_val, y_val = next(iter(val_loader))
+    X_val, y_val = X_val.to(device), y_val.to(device)
+
+
+    # 5. compare the current base model vs this model
+    print("\n===== PERFORMANCE METRICS =====")
+
+    # Create and save comparison metrics
+    original_model_metrics = ModelPerformanceMetrics("Original_DLU_Net")
+    original_metrics = original_model_metrics.extract_metrics_from_model(
+        original_model
+    )
+
+    pruned_model_metrics = ModelPerformanceMetrics("Magnitude Pruned Model")
+    pruned_metrics = pruned_model_metrics.extract_metrics_from_model(
+        shared_model
+    )
+
+    pruned_model_metrics.benchmark_inference_speed(shared_model, X_val)
+    original_model_metrics.benchmark_inference_speed(original_model, X_val)
+
+
+    model_comparison = ModelComparison(
+        original_model_metrics, pruned_model_metrics)
+
+    model_comparison.calculate_speedup()
+    model_comparison.print_summary()
+
+
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    statistics()

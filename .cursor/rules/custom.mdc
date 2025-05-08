@@ -1,9 +1,68 @@
 ---
-description: 
+description: when writting any report
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-**Python ML & Deep Learning Coding Guidelines**
+
+
+To ensure the success and credibility of your master's-level research on "Slim Models Creation using Pruning and Sharing Weights on RAAGR2-Net Models," ensure that all reference are least 2019 search the web.
+
+
+---
+
+
+### 1. **Accuracy and Credibility**
+
+* **Factual Integrity**: All information must be accurate and verifiable. Misinformation undermines the research's credibility.
+
+* **Source Verification**: Cross-reference all data with reputable sources, including peer-reviewed journals and official publications.
+
+### 2. **Comprehensive Web Research**
+
+* **Extensive Literature Review**: Conduct thorough searches on topics such as RAAGR2-Net architecture, model pruning techniques, weight sharing methods, and their applications in medical imaging.
+
+* **Latest Developments**: Stay updated with the most recent advancements in deep learning model optimization, especially those relevant to medical image segmentation.
+
+### 3. **Technical Depth and Clarity**
+
+* **Detailed Explanations**: Provide in-depth analyses of concepts like pruning (structured and unstructured), weight sharing, and their impact on model performance.
+
+* **Mathematical Rigor**: Include relevant equations, algorithms, and computational complexity analyses where applicable.
+
+### 4. **Structured and Organized Content**
+
+* **Clear Formatting**: Use markdown syntax to structure content with headings, subheadings, bullet points, and numbered lists for readability.
+
+* **Consistent Terminology**: Maintain consistent use of technical terms and definitions throughout the document.
+
+### 5. **Critical Analysis and Evaluation**
+
+* **Comparative Studies**: Analyze and compare different pruning and weight sharing techniques, discussing their advantages and limitations.([Wikipedia][1])
+
+* **Performance Metrics**: Evaluate models based on parameters such as accuracy, model size, inference time, and computational efficiency.
+
+### 6. **Ethical and Practical Considerations**
+
+* **Clinical Applicability**: Assess the feasibility of deploying slimmed RAAGR2-Net models in real-world clinical settings, considering resource constraints.
+
+* **Ethical Implications**: Discuss the ethical considerations of using AI models in medical diagnoses, including patient privacy and data security.
+
+### 7. **Documentation and Referencing**
+
+* **Proper Citations**: Cite all sources using a consistent referencing style (e.g., APA, IEEE) as per your institution's guidelines.
+
+* **Annotated Bibliography**: Maintain an annotated bibliography summarizing the relevance and key findings of each source.([Wikipedia][2])
+
+### 8. **Continuous Learning and Adaptation**
+
+* **Feedback Integration**: Incorporate feedback from supervisors and peers to refine research questions and methodologies.
+
+* **Iterative Improvement**: Regularly update the research approach based on new findings and technological advancements.
+
+
+
+
+<!-- **Python ML & Deep Learning Coding Guidelines**
 
 **Persona**: You are a senior full‑stack developer and machine learning expert—one of those rare 10× engineers with deep knowledge of Python, NumPy, PyTorch/TensorFlow, and best practices for production‑ready ML pipelines.
 
@@ -90,4 +149,4 @@ Maintain a single `requirements.txt` or `environment.yml` for reproducibility.
 
 When updating existing ML pipelines or models, modify only the files or functions directly related to the task. Avoid refactoring unrelated code to minimize risk and technical debt.
 
-
+ -->
