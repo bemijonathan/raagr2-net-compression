@@ -10,9 +10,11 @@ import torchvision.transforms as transforms
 
 # Set GPU device if available
 device = torch.device("mps" if torch.backends.mps.is_available() else
-                     "cuda" if torch.cuda.is_available() else "cpu")
+                      "cuda" if torch.cuda.is_available() else "cpu")
 
 # Keep visualization and helper functions unchanged
+
+
 def devide_cls(ch2_img, ch3_img, ch4_img):
     """Divide into tumor subregions"""
     ED = ch4_img - ch2_img
@@ -20,10 +22,12 @@ def devide_cls(ch2_img, ch3_img, ch4_img):
     ET = ch3_img
     return NCR, ET, ED
 
+
 def color_type(NCR, ET, ED):
     RED = NCR + ET
     GREEN = ED + ET
     return RED, GREEN
+
 
 def GT_color(R, G):
     """Convert to colored visualization image using PyTorch"""
@@ -38,6 +42,7 @@ def GT_color(R, G):
         add_img = np.concatenate((R, G, np.zeros((192, 192, 1))), axis=2)
         return add_img
 
+
 def convert_3d(raw_img):
     """Convert single channel to RGB"""
     if isinstance(raw_img, torch.Tensor):
@@ -48,6 +53,7 @@ def convert_3d(raw_img):
         # Handle numpy arrays for backward compatibility
         Con_img = np.concatenate((raw_img, raw_img, raw_img), axis=2)
         return Con_img
+
 
 def result_img(X_img, Y_img):
     """Generate result visualization image using PyTorch"""
@@ -81,26 +87,33 @@ def result_img(X_img, Y_img):
         return OVR_img
 
 # Metrics and loss functions remain the same
+
+
 def dice_coef(y_pred, y_true, smooth=1.0):
     y_true_f = y_true.reshape(-1)
     y_pred_f = y_pred.reshape(-1)
     intersection = torch.sum(y_true_f * y_pred_f)
     return (2. * intersection + smooth) / (torch.sum(y_true_f) + torch.sum(y_pred_f) + smooth)
 
+
 def dice_loss(y_pred, y_true, smooth=1.0):
     return 1 - dice_coef(y_pred, y_true, smooth)
+
 
 def mean_iou(y_pred, y_true):
     y_pred = (y_pred > 0.5).float()
     intersection = torch.sum(y_true * y_pred, dim=(1, 2, 3))
-    union = torch.sum(y_true, dim=(1, 2, 3)) + torch.sum(y_pred, dim=(1, 2, 3)) - intersection
+    union = torch.sum(y_true, dim=(1, 2, 3)) + \
+        torch.sum(y_pred, dim=(1, 2, 3)) - intersection
     iou = (intersection + 1e-7) / (union + 1e-7)
     return torch.mean(iou)
+
 
 def weighted_bce_dice_loss(y_pred, y_true, weight_bce=0.5):
     bce = F.binary_cross_entropy(y_pred, y_true)
     dice = dice_loss(y_pred, y_true)
     return weight_bce * bce + (1 - weight_bce) * dice
+
 
 def class_dice(y_pred, y_true, class_idx, smooth=1.0):
     y_true_c = y_true[:, class_idx, :, :]
@@ -108,6 +121,7 @@ def class_dice(y_pred, y_true, class_idx, smooth=1.0):
     return dice_coef(y_pred_c, y_true_c, smooth)
 
 # Enhanced blocks with weight sharing capabilities
+
 
 class SharedConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -124,10 +138,12 @@ class SharedConvBlock(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+
 class SharedDepthwiseBlock(nn.Module):
     """
     A single "shared‐depthwise → pointwise → residual" block.
     """
+
     def __init__(self, in_ch, out_ch, dilation, shared_dw_weight, shared_dw_bias):
         super().__init__()
         self.in_ch = in_ch
@@ -167,6 +183,7 @@ class SharedDepthwiseBlock(nn.Module):
         # 3) Residual projection and addition
         res = self.res_proj(d)  # → [B, out_ch, H, W]
         return y + res          # channel dims match
+
 
 class ReASPP3(nn.Module):
     def __init__(self, in_channels, out_channels, r=3):
@@ -218,26 +235,48 @@ class ReASPP3(nn.Module):
         return self.final_conv(cat)
 
 # New UpConv block with shared weights
+
+
 class SharedUpConv(nn.Module):
     def __init__(self, in_channels, out_channels, encoder_conv_weights=None):
         super(SharedUpConv, self).__init__()
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.up = nn.Upsample(
+            scale_factor=2, mode='bilinear', align_corners=True)
 
-        # If encoder weights are provided, use them for the convolution
-        if encoder_conv_weights is not None:
-            self.conv = encoder_conv_weights
-        else:
-            self.conv = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-                nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True)
-            )
+        # Create proper convolution with correct channel dimensions
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
         x = self.up(x)
         return self.conv(x)
 
 # Enhanced attention module that works with shared weights
+
+
+def evaluate_dice_scores(model, X, Y):
+    """Calculate dice scores for tumor regions"""
+    model.eval()
+    with torch.no_grad():
+        # Convert numpy arrays to PyTorch tensors with correct dimension order
+        # Change from [batch, height, width, channels] to [batch, channels, height, width]
+        X_tensor = torch.from_numpy(X).float().permute(0, 3, 1, 2).to(device)
+        Y_tensor = torch.from_numpy(Y).float().permute(0, 3, 1, 2).to(device)
+
+        # Get predictions
+        outputs = model(X_tensor)
+
+        # Calculate dice scores for each tumor region
+        tc_dice = class_dice(outputs, Y_tensor, 2).item()
+        ec_dice = class_dice(outputs, Y_tensor, 3).item()
+        wt_dice = class_dice(outputs, Y_tensor, 4).item()
+
+    return tc_dice, ec_dice, wt_dice
+
+
 class EnhancedAttention(nn.Module):
     def __init__(self, F_g, F_l, F_int):
         super(EnhancedAttention, self).__init__()
@@ -267,6 +306,8 @@ class EnhancedAttention(nn.Module):
         return x * psi
 
 # Shared encoder-decoder block for feature processing
+
+
 class SharedEncoderDecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels, r=3):
         super(SharedEncoderDecoderBlock, self).__init__()
@@ -288,6 +329,8 @@ class SharedEncoderDecoderBlock(nn.Module):
         }
 
 # Main DLU-Net model with enhanced weight sharing
+
+
 class EnhancedDLUNet(nn.Module):
     def __init__(self, in_channels=4, out_channels=5):
         super(EnhancedDLUNet, self).__init__()
@@ -305,6 +348,28 @@ class EnhancedDLUNet(nn.Module):
         self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
 
+        # Create conv blocks for encoder path
+        self.enc_conv1 = nn.Sequential(
+            nn.Conv2d(32, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True)
+        )
+        self.enc_conv2 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True)
+        )
+        self.enc_conv3 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True)
+        )
+        self.enc_conv4 = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True)
+        )
+
         # Decoder path upsample blocks
         self.up5 = SharedUpConv(512, 256)
         self.up4 = SharedUpConv(256, 128)
@@ -318,11 +383,23 @@ class EnhancedDLUNet(nn.Module):
         self.att2 = EnhancedAttention(32, 32, 16)
 
         # Aggregation blocks for decoder path
-        # Using ReASPP3 blocks for decoder path with shared weights from encoder
+        # Create decoder ReASPP3 blocks that share weights with the encoder blocks
         self.dec5 = ReASPP3(512, 256, r=3)  # After concat: 256+256=512
+        # Manually share weights between encoder and decoder blocks
+        self.dec5.shared_dw_weight = self.shared_block4.shared_dw_weight
+        self.dec5.shared_dw_bias = self.shared_block4.shared_dw_bias
+
         self.dec4 = ReASPP3(256, 128, r=3)  # After concat: 128+128=256
+        self.dec4.shared_dw_weight = self.shared_block3.shared_dw_weight
+        self.dec4.shared_dw_bias = self.shared_block3.shared_dw_bias
+
         self.dec3 = ReASPP3(128, 64, r=3)   # After concat: 64+64=128
+        self.dec3.shared_dw_weight = self.shared_block2.shared_dw_weight
+        self.dec3.shared_dw_bias = self.shared_block2.shared_dw_bias
+
         self.dec2 = ReASPP3(64, 32, r=3)    # After concat: 32+32=64
+        self.dec2.shared_dw_weight = self.shared_block1.shared_dw_weight
+        self.dec2.shared_dw_bias = self.shared_block1.shared_dw_bias
 
         # Final output layer
         self.final_conv = nn.Conv2d(32, out_channels, kernel_size=1)
@@ -331,15 +408,20 @@ class EnhancedDLUNet(nn.Module):
     def forward(self, x):
         # Encoder path with shared blocks
         e1 = self.shared_block1.encoder(x)
+        # Apply encoder conv that will be shared with decoder
+        e1 = self.enc_conv1(e1)
         p1 = self.pool1(e1)
 
         e2 = self.shared_block2.encoder(p1)
+        e2 = self.enc_conv2(e2)
         p2 = self.pool2(e2)
 
         e3 = self.shared_block3.encoder(p2)
+        e3 = self.enc_conv3(e3)
         p3 = self.pool3(e3)
 
         e4 = self.shared_block4.encoder(p3)
+        e4 = self.enc_conv4(e4)
         p4 = self.pool4(e4)
 
         e5 = self.shared_block5.encoder(p4)
@@ -370,6 +452,8 @@ class EnhancedDLUNet(nn.Module):
         return self.sigmoid(out)
 
 # Keep the rest of the functions (data handling, training, etc.) the same
+
+
 class BrainTumorDataset(Dataset):
     def __init__(self, images, masks, transform=None):
         self.images = images
@@ -394,6 +478,7 @@ class BrainTumorDataset(Dataset):
 
         return image, mask
 
+
 def get_initial_model():
     """Create and return an initialized DLU-Net model with weight sharing"""
     try:
@@ -403,6 +488,7 @@ def get_initial_model():
     except Exception as e:
         print("Error creating model:", e)
         raise
+
 
 def load_trained_model(model_path):
     """Load a trained model from a checkpoint file"""
@@ -414,6 +500,8 @@ def load_trained_model(model_path):
     return model
 
 # The train_model and supporting functions remain the same
+
+
 def train_model(model, train_loader, val_loader, num_epochs=30, learning_rate=1e-4):
     """Train the PyTorch model"""
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

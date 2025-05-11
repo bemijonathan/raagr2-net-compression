@@ -1,7 +1,6 @@
-
 import torch
 from src.utils.training import resume_training
-from src.architecture.enc_dec_shared_model import get_initial_model, load_trained_model, evaluate_dice_scores, class_dice, arrange_img, dice_coef, mean_iou
+from src.architecture.enc_dec_shared_model import get_initial_model, load_trained_model, class_dice, dice_coef, mean_iou
 from src.architecture.model import load_trained_model as ltm
 from src.utils.custom_loss import Weighted_BCEnDice_loss
 from src.utils.load_data import BrainDataset
@@ -13,19 +12,40 @@ import numpy as np
 device = torch.device("mps")
 
 
-data_path = "data/"
-val_dataset = BrainDataset(data_path, "val")
-train_dataset = BrainDataset(data_path, "train")
-val_loader = DataLoader(val_dataset, batch_size=batch_size)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+# Comment out the real data loading
+# data_path = "data/"
+# val_dataset = BrainDataset(data_path, "val")
+# train_dataset = BrainDataset(data_path, "train")
+# val_loader = DataLoader(val_dataset, batch_size=batch_size)
+# train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
+# Dummy data for testing
+
+
+def test_dummy_training():
+    print("\n===== DUMMY TRAINING TEST =====")
+    model = get_initial_model()
+    model.train()
+    dummy_input = torch.randn(batch_size, 4, 192, 192).to(device)
+    dummy_target = torch.randint(
+        0, 2, (batch_size, 5, 192, 192)).float().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+    loss_function = Weighted_BCEnDice_loss
+    optimizer.zero_grad()
+    output = model(dummy_input)
+    loss = loss_function(output, dummy_target)
+    print(f"Dummy loss: {loss.item()}")
+    loss.backward()
+    optimizer.step()
+    print("Dummy training step completed successfully.")
 
 
 def main():
     model = get_initial_model()
 
     total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    trainable_params = sum(p.numel()
+                           for p in model.parameters() if p.requires_grad)
 
     print(f"Total parameters: {total_params}")
     print(f"Trainable parameters: {trainable_params}")
@@ -33,18 +53,18 @@ def main():
     # train for one epoch
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.1)
-
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, 'min', patience=5, factor=0.1)
 
     new_model = resume_training(
         model=model,
-        optimizer = optimizer,
-        scheduler = scheduler,
-        train_loader = train_loader,
-        val_loader = val_loader,
-        loss_function = Weighted_BCEnDice_loss,
-        device = device,
-        resume_checkpoint_path = "",
+        optimizer=optimizer,
+        scheduler=scheduler,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        loss_function=Weighted_BCEnDice_loss,
+        device=device,
+        resume_checkpoint_path="",
         starting_epoch=0,
         num_epochs=10,
         checkpoint_interval=5,
@@ -53,7 +73,8 @@ def main():
         validate_every=10,
     )
 
-    torch.save(new_model, 'model/enc_dec_shared_model/enc_dec_shared_model_epoch_10.pth')
+    torch.save(
+        new_model, 'model/enc_dec_shared_model/enc_dec_shared_model_epoch_10.pth')
 
 
 def test_model():
@@ -65,7 +86,8 @@ def test_model():
     #     weights_only=False
     # )
     # model = model[0]
-    model = load_trained_model("mlruns/820203924686178493/3f3f50dcc84a40efa3665e02a104d67f/artifacts/checkpoints/dlu_net_model_epoch_40.pth")
+    model = load_trained_model(
+        "mlruns/820203924686178493/3f3f50dcc84a40efa3665e02a104d67f/artifacts/checkpoints/dlu_net_model_epoch_40.pth")
     # 5. Set model to evaluation mode
     model.eval()
     print("Model loaded successfully and set to evaluation mode")
@@ -97,7 +119,7 @@ def test_model():
                 results.append([tc_dice, ec_dice, wt_dice,
                                dice_score_main, mean_iou_score])
                 print(
-                f"Sample Dice Scores - Tumor Core: {tc_dice:.4f}, Enhancing Tumor: {ec_dice:.4f}, Whole Tumor: {wt_dice:.4f}")
+                    f"Sample Dice Scores - Tumor Core: {tc_dice:.4f}, Enhancing Tumor: {ec_dice:.4f}, Whole Tumor: {wt_dice:.4f}")
 
         # get average of the results
         print(results)
@@ -126,19 +148,19 @@ def test_model():
             f"IQR of Whole Tumor Dice: {np.percentile(wt_dice_values, 75) - np.percentile(wt_dice_values, 25)}")
 
 
-
-
 def statistics():
-    shared_model = load_trained_model("mlruns/820203924686178493/d066cef71fe742a48417b685a8b6a8d6/artifacts/checkpoints/dlu_net_model_epoch_60.pth")
+    shared_model = load_trained_model(
+        "mlruns/820203924686178493/d066cef71fe742a48417b685a8b6a8d6/artifacts/checkpoints/dlu_net_model_epoch_60.pth")
     original_model = ltm("model/dlu_net_model_epoch_58.pth")
 
     shared_model = shared_model.to(device)
     original_model = original_model.to(device)
 
+    # Verify shared weights
+    verify_weight_sharing(shared_model)
 
     X_val, y_val = next(iter(val_loader))
     X_val, y_val = X_val.to(device), y_val.to(device)
-
 
     # 5. compare the current base model vs this model
     print("\n===== PERFORMANCE METRICS =====")
@@ -157,7 +179,6 @@ def statistics():
     pruned_model_metrics.benchmark_inference_speed(shared_model, X_val)
     original_model_metrics.benchmark_inference_speed(original_model, X_val)
 
-
     model_comparison = ModelComparison(
         original_model_metrics, pruned_model_metrics)
 
@@ -165,7 +186,56 @@ def statistics():
     model_comparison.print_summary()
 
 
+def verify_weight_sharing(model):
+    """Verify that weights are correctly shared between encoder and decoder paths"""
+    print("\n===== WEIGHT SHARING VERIFICATION =====")
+
+    # Check if encoder and decoder ReASPP3 blocks share the same weights
+    print("\nChecking ReASPP3 shared weights:")
+    # Compare weights between encoder block 1 and decoder block 2
+    enc1_weight_id = id(model.shared_block1.shared_dw_weight)
+    dec2_weight_id = id(model.dec2.shared_dw_weight)
+    print(
+        f"Encoder block 1 and decoder block 2 weights shared: {enc1_weight_id == dec2_weight_id}")
+
+    # Compare weights between encoder block 2 and decoder block 3
+    enc2_weight_id = id(model.shared_block2.shared_dw_weight)
+    dec3_weight_id = id(model.dec3.shared_dw_weight)
+    print(
+        f"Encoder block 2 and decoder block 3 weights shared: {enc2_weight_id == dec3_weight_id}")
+
+    # Compare weights between encoder block 3 and decoder block 4
+    enc3_weight_id = id(model.shared_block3.shared_dw_weight)
+    dec4_weight_id = id(model.dec4.shared_dw_weight)
+    print(
+        f"Encoder block 3 and decoder block 4 weights shared: {enc3_weight_id == dec4_weight_id}")
+
+    # Compare weights between encoder block 4 and decoder block 5
+    enc4_weight_id = id(model.shared_block4.shared_dw_weight)
+    dec5_weight_id = id(model.dec5.shared_dw_weight)
+    print(
+        f"Encoder block 4 and decoder block 5 weights shared: {enc4_weight_id == dec5_weight_id}")
+
+    # Calculate parameter savings
+    total_parameters = sum(p.numel() for p in model.parameters())
+    # Before accounting for sharing
+    unique_parameters = sum(p.numel() for p in model.parameters())
+
+    # Subtract shared parameters from unique count
+    # Each shared weight tensor is counted twice, so subtract once
+    for i in range(1, 5):
+        block = getattr(model, f"shared_block{i}")
+        unique_parameters -= block.shared_dw_weight.numel()
+        unique_parameters -= block.shared_dw_bias.numel()
+
+    parameter_savings = 1 - (unique_parameters / total_parameters)
+    print(f"\nTotal parameters (with duplicates): {total_parameters}")
+    print(f"Unique parameters (after sharing): {unique_parameters}")
+    print(f"Parameter sharing efficiency: {parameter_savings * 100:.2f}%")
+
+
 if __name__ == "__main__":
-    main()
+    test_dummy_training()
+    # main()
     # test_model()
     # statistics()
