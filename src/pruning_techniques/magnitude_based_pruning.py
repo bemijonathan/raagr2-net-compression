@@ -177,11 +177,11 @@ def evaluate_model(model, val_loader, batch_size=8):
             num_batches += 1
 
     return {
-        "mean_iou": total_iou / num_batches,
-        "dice_coef": total_dice / num_batches,
-        "c_2": total_class_dice[2] / num_batches,
-        "c_3": total_class_dice[3] / num_batches,
-        "c_4": total_class_dice[4] / num_batches
+        "mean_iou": round(total_iou / num_batches, 2),
+        "dice_coef": round(total_dice / num_batches, 2),
+        "c_2": round(total_class_dice[2] / num_batches, 2),
+        "c_3": round(total_class_dice[3] / num_batches, 2),
+        "c_4": round(total_class_dice[4] / num_batches, 2)
     }
 
 
@@ -353,8 +353,6 @@ def main():
     print(f"Weight sparsity: {best_result['weight_sparsity']:.2f}%")
 
 
-
-
 def statistics():
     device = torch.device("mps")
 
@@ -362,17 +360,12 @@ def statistics():
     val_dataset = BrainDataset(data_path, "val")
     val_loader = DataLoader(val_dataset, batch_size=batch_size)
 
-
-    shared_model = load_trained_model("model/pruned_pretrained/magnitude/dlu_net_model_epoch_10.pth")
+    shared_model = load_trained_model(
+        "model/pruned_pretrained/magnitude/dlu_net_model_epoch_10.pth")
     original_model = load_trained_model("model/dlu_net_model_epoch_58.pth")
 
     shared_model = shared_model.to(device)
     original_model = original_model.to(device)
-
-
-    X_val, y_val = next(iter(val_loader))
-    X_val, y_val = X_val.to(device), y_val.to(device)
-
 
     # 5. compare the current base model vs this model
     print("\n===== PERFORMANCE METRICS =====")
@@ -388,17 +381,16 @@ def statistics():
         shared_model
     )
 
-    pruned_model_metrics.benchmark_inference_speed(shared_model, X_val)
-    original_model_metrics.benchmark_inference_speed(original_model, X_val)
-
+    # Benchmark using entire validation loader
+    pruned_model_metrics.benchmark_inference_speed(shared_model, val_loader)
+    original_model_metrics.benchmark_inference_speed(
+        original_model, val_loader)
 
     model_comparison = ModelComparison(
         original_model_metrics, pruned_model_metrics)
 
     model_comparison.calculate_speedup()
     model_comparison.print_summary()
-
-
 
 
 if __name__ == "__main__":

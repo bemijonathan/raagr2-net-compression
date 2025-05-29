@@ -1,0 +1,442 @@
+{
+    "base_model": {
+        "metrics": {
+            "dice_coef": 0.9849058066199465,
+            "mean_iou": 0.9709958939290628,
+            "class_dice": {
+                "c2": 0.8254422625390495,
+                "c3": 0.824681282043457,
+                "c4": 0.8512506012509509
+            }
+        },
+        "memory_stats": {
+            "peak_ram_gb": 8.18,
+            "avg_ram_gb": 6.52,
+            "ram_change_gb": 3.23,
+            "execution_time_sec": 8.50,
+            "peak_gpu_memory_gb": 0.55,
+            "gpu_memory_change_gb": 0.00
+        },
+        "model_stats": {
+            "num_params": 8911301,
+            "param_bytes": 33.99391555786133,
+            "zero_params": 0,
+            "avg_inference_time_ms": 12.878942489624023,
+            "model_size_mb": 34.25770092010498,
+            "flops": 15919276032
+        }
+    },
+    "magnitude_pruning": {
+        "10_percent": {
+            "metrics": {
+                "dice_coef": 0.7415336552189618,
+                "mean_iou": 0.8697208671308145,
+                "class_dice": {
+                    "c2": 0.18736368531315792,
+                    "c3": 0.020902479987409784,
+                    "c4": 0.043885993879152145
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.51,
+                "ram_change_gb": 3.25,
+                "execution_time_sec": 8.87,
+                "peak_gpu_memory_gb": 0.51,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 903744,
+                "avg_inference_time_ms": 14.13257122039795,
+                "model_size_mb": 34.318307876586914,
+                "flops": 15919276032
+            }
+        },
+        "20_percent": {
+            "metrics": {
+                "dice_coef": 0.754736337719894,
+                "mean_iou": 0.8931290848952967,
+                "class_dice": {
+                    "c2": 0.0022380409603257006,
+                    "c3": 0.020902479987409784,
+                    "c4": 0.0004265603376729925
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.17,
+                "avg_ram_gb": 6.52,
+                "ram_change_gb": 3.25,
+                "execution_time_sec": 8.50,
+                "peak_gpu_memory_gb": 0.51,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 1793194,
+                "avg_inference_time_ms": 13.483476638793945,
+                "model_size_mb": 34.318307876586914,
+                "flops": 15919276032
+            }
+        },
+        "30_percent": {
+            "metrics": {
+                "dice_coef": 0.6076521499127876,
+                "mean_iou": 0.8443326328585787,
+                "class_dice": {
+                    "c2": 0.030793417540447014,
+                    "c3": 0.020902479987409784,
+                    "c4": 0.0015938938808309415
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.52,
+                "ram_change_gb": 3.24,
+                "execution_time_sec": 8.78,
+                "peak_gpu_memory_gb": 0.41,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 2671824,
+                "avg_inference_time_ms": 13.287353515625,
+                "model_size_mb": 34.318307876586914,
+                "flops": 15919276032
+            }
+        }
+    },
+    "magnitude_pruning_finetuned": {
+        "20_percent": {
+            "metrics": {
+                "dice_coef": 0.9850883661973767,
+                "mean_iou": 0.9716231935634846,
+                "class_dice": {
+                    "c2": 0.827361123772656,
+                    "c3": 0.8312098503839679,
+                    "c4": 0.8251636751541277
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.20,
+                "avg_ram_gb": 6.56,
+                "ram_change_gb": 3.23,
+                "execution_time_sec": 8.37,
+                "peak_gpu_memory_gb": 0.48,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 0,
+                "avg_inference_time_ms": 13.312792778015137,
+                "model_size_mb": 34.25770092010498,
+                "flops": 15919276032
+            }
+        }
+    },
+    "enc_con_stats": {
+        "metrics": {
+            "dice_coef": 0.9840950747815574,
+            "mean_iou": 0.9694771475908233,
+            "class_dice": {
+                "c2": 0.7717155009144689,
+                "c3": 0.7817536428934191,
+                "c4": 0.8248078993907789
+            }
+        },
+        "memory_stats": {
+            "peak_ram_gb": 8.19,
+            "avg_ram_gb": 6.51,
+            "ram_change_gb": 3.24,
+            "execution_time_sec": 8.17,
+            "peak_gpu_memory_gb": 0.68,
+            "gpu_memory_change_gb": 0.00
+        },
+        "model_stats": {
+            "num_params": 6621141,
+            "param_bytes": 25.257648468017578,
+            "zero_params": 0,
+            "avg_inference_time_ms": 11.79344654083252,
+            "model_size_mb": 25.500978469848633,
+            "flops": 15794085888
+        }
+    },
+    "snip_one_shot": {
+        "10_percent": {
+            "metrics": {
+                "dice_coef": 0.2854810124490319,
+                "mean_iou": 0.005263439744495128,
+                "class_dice": {
+                    "c2": 0.03092042324928249,
+                    "c3": 0.02092113197076975,
+                    "c4": 0.07314092143461472
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.20,
+                "avg_ram_gb": 6.53,
+                "ram_change_gb": 3.23,
+                "execution_time_sec": 8.68,
+                "peak_gpu_memory_gb": 0.51,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 899850,
+                "avg_inference_time_ms": 13.491582870483398,
+                "model_size_mb": 34.25452899932861,
+                "flops": 15919276032
+            }
+        },
+        "20_percent": {
+            "metrics": {
+                "dice_coef": 0.27890818511567467,
+                "mean_iou": 0.016920447221775426,
+                "class_dice": {
+                    "c2": 0.030956150174549803,
+                    "c3": 0.020996450611231166,
+                    "c4": 0.07373327995854907
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.20,
+                "avg_ram_gb": 6.54,
+                "ram_change_gb": 3.23,
+                "execution_time_sec": 8.59,
+                "peak_gpu_memory_gb": 0.41,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 1788372,
+                "avg_inference_time_ms": 13.390898704528809,
+                "model_size_mb": 34.25452899932861,
+                "flops": 15919276032
+            }
+        },
+        "30_percent": {
+            "metrics": {
+                "dice_coef": 0.28660800707776374,
+                "mean_iou": 0.11128781272507296,
+                "class_dice": {
+                    "c2": 0.03102044675998935,
+                    "c3": 0.020961067801136976,
+                    "c4": 0.07407471528503953
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.51,
+                "ram_change_gb": 3.23,
+                "execution_time_sec": 8.62,
+                "peak_gpu_memory_gb": 0.34,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 2676893,
+                "avg_inference_time_ms": 13.980650901794434,
+                "model_size_mb": 34.25452899932861,
+                "flops": 15919276032
+            }
+        }
+    },
+    "snip_one_shot_finetuned": {
+        "20_percent": {
+            "metrics": {
+                "dice_coef": 0.9854093179470156,
+                "mean_iou": 0.9719040731831294,
+                "class_dice": {
+                    "c2": 0.8458074781952835,
+                    "c3": 0.8262319128687788,
+                    "c4": 0.8564564185898479
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.21,
+                "avg_ram_gb": 6.53,
+                "ram_change_gb": 3.23,
+                "execution_time_sec": 8.33,
+                "peak_gpu_memory_gb": 0.51,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 8911301,
+                "param_bytes": 33.99391555786133,
+                "zero_params": 8892,
+                "avg_inference_time_ms": 12.624979019165039,
+                "model_size_mb": 34.25770092010498,
+                "flops": 15919276032
+            }
+        }
+    },
+    "depgraph": {
+        "10_percent": {
+            "metrics": {
+                "dice_coef": 0.9528452724945254,
+                "mean_iou": 0.9154405397612874,
+                "class_dice": {
+                    "c2": 0.2480454042599332,
+                    "c3": 0.17733553885311887,
+                    "c4": 0.24610412102646945
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.50,
+                "ram_change_gb": 3.24,
+                "execution_time_sec": 8.88,
+                "peak_gpu_memory_gb": 0.45,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 7293449,
+                "param_bytes": 27.82229995727539,
+                "zero_params": 0,
+                "avg_inference_time_ms": 13.973426818847656,
+                "model_size_mb": 28.127044677734375,
+                "flops": 13009615488
+            }
+        },
+        "20_percent": {
+            "metrics": {
+                "dice_coef": 0.5969828781558246,
+                "mean_iou": 0.4391923608576379,
+                "class_dice": {
+                    "c2": 0.06328019836531361,
+                    "c3": 0.0009738143633557029,
+                    "c4": 0.035040179994411585
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.53,
+                "ram_change_gb": 3.24,
+                "execution_time_sec": 8.24,
+                "peak_gpu_memory_gb": 0.42,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 6141273,
+                "param_bytes": 23.42709732055664,
+                "zero_params": 0,
+                "avg_inference_time_ms": 13.68556022644043,
+                "model_size_mb": 23.721160888671875,
+                "flops": 10838892960
+            }
+        },
+        "30_percent": {
+            "metrics": {
+                "dice_coef": 0.5969828781558246,
+                "mean_iou": 0.4391923608576379,
+                "class_dice": {
+                    "c2": 0.06328019836531361,
+                    "c3": 0.0009738143633557029,
+                    "c4": 0.035040179994411585
+                }
+            },
+            "memory_stats": {
+                "peak_ram_gb": 8.19,
+                "avg_ram_gb": 6.53,
+                "ram_change_gb": 3.24,
+                "execution_time_sec": 8.24,
+                "peak_gpu_memory_gb": 0.42,
+                "gpu_memory_change_gb": 0.00
+            },
+            "model_stats": {
+                "num_params": 6141273,
+                "param_bytes": 23.42709732055664,
+                "zero_params": 0,
+                "avg_inference_time_ms": 13.68556022644043,
+                "model_size_mb": 23.721160888671875,
+                "flops": 10838892960
+            }
+        }
+    },
+    "depthwise_shared": {
+        "metrics": {
+            "dice_coef": 0.9836948237768034,
+            "mean_iou": 0.9689786855767413,
+            "class_dice": {
+                "c2": 0.7637660056352615,
+                "c3": 0.6408459484213735,
+                "c4": 0.8525908211382424
+            }
+        },
+        "memory_stats": {
+            "peak_ram_gb": 8.18,
+            "avg_ram_gb": 6.52,
+            "ram_change_gb": 3.24,
+            "execution_time_sec": 7.75,
+            "peak_gpu_memory_gb": 0.47,
+            "gpu_memory_change_gb": 0.00
+        },
+        "model_stats": {
+            "num_params": 5046221,
+            "param_bytes": 19.249805450439453,
+            "zero_params": 0,
+            "avg_inference_time_ms": 12.675261497497559,
+            "model_size_mb": 19.443893432617188,
+            "flops": 11862614016
+        }
+    },
+    "paired_shared_depthwise": {
+        "metrics": {
+            "dice_coef": 0.9785691721410286,
+            "mean_iou": 0.9599271264018082,
+            "class_dice": {
+                "c2": 0.6933742690740562,
+                "c3": 0.6718738427976283,
+                "c4": 0.7726584445776009
+            }
+        },
+        "memory_stats": {
+            "peak_ram_gb": 8.20,
+            "avg_ram_gb": 6.52,
+            "ram_change_gb": 3.24,
+            "execution_time_sec": 7.83,
+            "peak_gpu_memory_gb": 0.29,
+            "gpu_memory_change_gb": 0.00
+        },
+        "model_stats": {
+            "num_params": 5051061,
+            "param_bytes": 19.268268585205078,
+            "zero_params": 0,
+            "avg_inference_time_ms": 11.99803352355957,
+            "model_size_mb": 19.46550178527832,
+            "flops": 11862614016
+        }
+    },
+    "system_info": {
+        "os": "Windows 10 10.0.19045",
+        "python_version": "3.11.4",
+        "pytorch_version": "2.5.1+cu121",
+        "cpu": {
+            "physical_cores": 10,
+            "logical_cores": 20
+        },
+        "ram": {
+            "total_gb": 127.73,
+            "available_gb": 89.99
+        },
+        "cuda": {
+            "available": true,
+            "version": "12.1"
+        },
+        "gpu": {
+            "count": 1,
+            "device_0": {
+                "name": "NVIDIA RTX A5000",
+                "compute_capability": "8.6",
+                "total_memory_gb": 23.99
+            }
+        }
+    }
+}

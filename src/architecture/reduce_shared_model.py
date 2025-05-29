@@ -260,9 +260,9 @@ class AttentionBlock(nn.Module):
 
 class SharedDepthwiseBlock(nn.Module):
     """
-    A single “shared‐depthwise → pointwise → residual” block.
-    Depthwise uses outer model’s shared weights; pointwise and
-    residual projections are per‐block.
+    A single "shared-depthwise → pointwise → residual" block.
+    Depthwise uses outer model's shared weights; pointwise and
+    residual projections are per-block.
     """
 
     def __init__(self, in_ch, out_ch, dilation, shared_dw_weight, shared_dw_bias):
@@ -323,7 +323,6 @@ class ReASPP3(nn.Module):
             torch.randn(in_channels, 1, 3, 3))
         self.shared_dw_bias_2 = nn.Parameter(
             torch.randn(in_channels))
-
 
         # Four parallel blocks with increasing dilation
         self.block1 = SharedDepthwiseBlock(
