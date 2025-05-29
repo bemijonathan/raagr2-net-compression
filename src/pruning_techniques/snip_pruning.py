@@ -1,419 +1,517 @@
-"""
-SNIP Pruning for Neural Networks
-
-This script implements SNIP (Single-shot Network Pruning based on Connection Sensitivity)
-for neural network compression, based on the approach described in:
-
-"SNIP: Single-shot Network Pruning based on Connection Sensitivity"
-by Namhoon Lee, Thalaiyasingam Ajanthan, Philip H. S. Torr (2019)
-https://arxiv.org/abs/1810.02340
-
-SNIP prunes networks at initialization based on a saliency criterion that identifies
-structurally important connections for the given task. This approach:
-1. Requires only a single computation of connection sensitivities using a small batch of data
-2. Prunes the network once at initialization before training
-3. Eliminates the need for both pretraining and complex pruning schedules
-"""
-
+from src.utils.mlflow import setup_experiment
+from src.architecture.model import load_trained_model, mean_iou, class_dice, get_initial_model
+from utils.custom_metric import dice_coef
+from utils.custom_loss import Weighted_BCEnDice_loss
+from torch.utils.data import DataLoader
+from src.utils.load_data import BrainDataset, get_data_loaders
+from src.utils.stats import ModelPerformanceMetrics, ModelComparison
 import torch
 import torch.nn as nn
-from utils.stats import ModelPerformanceMetrics, ModelComparison
-from utils.load_data import get_data_loaders
-from architecture.model import load_trained_model,get_initial_model, class_dice, dice_coef, mean_iou
-import json
-import copy
 import numpy as np
+import copy
+import os
+import json
+import sys
+import time
+from pathlib import Path
 
-# Set device to Metal Performance Shaders (MPS) for accelerated computation on Mac
-device = torch.device("mps")
-
-
-train_loader, val_loader, test_loader = get_data_loaders("data")
-
+# Set device
+device = torch.device("cuda")
 
 
 def get_model_size(model):
+    """
+    Calculate and return the number of trainable parameters in the model.
+
+    Args:
+        model: PyTorch model
+
+    Returns:
+        int: Total number of trainable parameters
+    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def calculate_connection_sensitivity(model, dataloader, criterion):
+def prepare_data_batch(batch_size=16):
     """
-    Calculate the connection sensitivity for each parameter in the model.
-
-    Following the SNIP methodology, we compute the sensitivity as the absolute
-    value of the product of the parameter and its gradient after a single
-    forward-backward pass through a batch of data.
+    Prepare a batch of data for computing connection sensitivity.
 
     Args:
-        model: PyTorch model at initialization
-        dataloader: DataLoader containing a single batch of data
-        criterion: Loss function to use for the backward pass
+        batch_size: Size of the batch to use
 
     Returns:
-        dict: Dictionary mapping parameter names to their sensitivity tensors
+        tuple: (images, masks) training batch
     """
-    # Enable gradient computation for all parameters
-    for param in model.parameters():
-        if param.requires_grad:
-            # this means if the parameter is trainable
-            param.requires_grad_(True)
-
-    # Get a single batch of data
+    train_data = r"./data"
+    dataset = BrainDataset(train_data, "train")
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     images, masks = next(iter(dataloader))
-    images = images.to(device)
-    masks = masks.to(device)
+    return images.to(device), masks.to(device)
 
-    # get the predicted masks
+
+def calculate_connection_sensitivity(model, data_batch, prune_ratio):
+    """
+    Calculate the connection sensitivity for each weight using SNIP method.
+
+    Args:
+        model: PyTorch model
+        data_batch: (images, masks) tuple for training
+        prune_ratio: Percentage of weights to prune (0.0-1.0)
+
+    Returns:
+        tuple: (pruned_model, sensitivity_scores, pruning_mask)
+    """
+    # Create a copy of the model to compute sensitivity
+    model.zero_grad()
+    images, masks = data_batch
+
+    # Register hooks for gradient computation
+    sensitivity_scores = {}
+    pruning_masks = {}
+
+    # Get all trainable weights
+    weights_to_prune = []
+    for name, param in model.named_parameters():
+        if 'weight' in name and param.requires_grad:
+            # Include all weights in pruning
+            weights_to_prune.append((name, param))
+
+    # Forward pass
     outputs = model(images)
-    loss = criterion(outputs, masks)
+
+    # Create a weight tensor for the loss function (all ones for simplicity)
+    weight = torch.ones_like(masks)
+    loss = Weighted_BCEnDice_loss(masks, outputs)
 
     # Backward pass to compute gradients
     loss.backward()
 
     # Calculate sensitivity scores
-    sensitivities = {}
-    for name, param in model.named_parameters():
-        # if weight and grad is not None
-        if 'weight' in name and param.grad is not None:
-            # SNIP sensitivity score: |w * grad_w|
-            sensitivities[name] = torch.abs(param.grad * param)
+    all_scores = []
+    for name, weight in weights_to_prune:
+        # Calculate sensitivity score: |weight * gradient|
+        # Keep on same device as the model
+        score = torch.abs(weight.grad * weight).detach()
+        sensitivity_scores[name] = score
+        all_scores.append(score.view(-1))
 
-    # Reset gradients
-    model.zero_grad()
+    # Flatten all scores and determine global threshold using numpy
+    # Convert to numpy for percentile calculation
+    all_scores_tensor = torch.cat(all_scores)
+    all_scores_numpy = all_scores_tensor.detach().cpu().numpy()
 
-    return sensitivities
+    # Calculate percentile threshold
+    percentile_value = prune_ratio * 100
+    threshold = float(np.percentile(all_scores_numpy, percentile_value))
 
+    # Create masks based on threshold
+    for name, score in sensitivity_scores.items():
+        pruning_masks[name] = (score > threshold).float()
 
-def create_pruning_mask(sensitivities, prune_ratio):
-    """
-    Create pruning masks based on connection sensitivities.
+    # Apply masks to model
+    pruned_model = copy.deepcopy(model)
+    for name, param in pruned_model.named_parameters():
+        if name in pruning_masks:
+            # Ensure mask is on the same device as the parameter
+            mask = pruning_masks[name].to(param.device)
+            param.data = param.data * mask
 
-    We keep the connections with the highest sensitivity scores, pruning
-    the specified percentage of connections with the lowest scores.
-
-    Args:
-        sensitivities: Dictionary mapping parameter names to sensitivity tensors
-        prune_ratio: Percentage of weights to prune (0.0-1.0)
-
-    Returns:
-        dict: Dictionary of binary masks for each parameter
-    """
-    masks = {}
-
-    # Flatten all sensitivity scores into a single tensor for global pruning
-    all_scores = torch.cat([s.view(-1) for s in sensitivities.values()])
-
-    # Compute threshold using topk instead of kthvalue for MPS compatibility
-    if prune_ratio >= 1.0:
-        threshold = float('inf')
-    else:
-        # Calculate how many parameters to keep
-        keep_ratio = 1.0 - prune_ratio
-        num_params_to_keep = int(all_scores.numel() * keep_ratio)
-        # Get the top-k values (k = number to keep)
-        if num_params_to_keep > 0:
-            # Move to CPU for compatibility if needed
-            topk_values = torch.topk(all_scores, num_params_to_keep, sorted=True).values
-            # The threshold is the smallest value among the top-k
-            threshold = topk_values[-1].item()
-        else:
-            # No parameters to keep, set a very high threshold value
-            threshold = float('inf')  # Direct float value doesn't have .item() method
-
-    # Create masks: keep weights with sensitivity > threshold
-    for name, sensitivity in sensitivities.items():
-        masks[name] = (sensitivity > threshold).float()
-
-    return masks
-
-
-def apply_pruning_masks(model, masks):
-    """
-    Apply pruning masks to model parameters.
-
-    This function zeroes out weights according to the pruning masks.
-
-    Args:
-        model: PyTorch model
-        masks: Dictionary of binary masks for each parameter
-
-    Returns:
-        model: Pruned PyTorch model
-    """
-    for name, param in model.named_parameters():
-        if name in masks:
-            # Apply mask to zero out pruned weights
-            param.data.mul_(masks[name])
-
-    return model
+    return pruned_model, sensitivity_scores, pruning_masks
 
 
 def evaluate_model(model, val_loader):
     """
     Evaluate model on validation data.
 
-    Computes multiple metrics relevant for medical image segmentation:
-    - Mean IoU (Intersection over Union)
-    - Dice coefficient (overall)
-    - Class-specific Dice coefficients for each segmentation class
-
     Args:
         model: PyTorch model
         val_loader: Validation data loader
-        batch_size: Batch size for evaluation
 
     Returns:
         dict: Dictionary of evaluation metrics
     """
     model.eval()
-    total_iou = 0
-    total_dice = 0
-    total_class_dice = {2: 0, 3: 0, 4: 0}
-    num_batches = 0
+    results = []
 
     with torch.no_grad():
-        for images, masks in val_loader:
-            images = images.to(device)
-            masks = masks.to(device)
-            outputs = model(images)
+        for val_images, val_masks in val_loader:
+            # Get the first sample
+            sample_image = val_images.to(device)
+            sample_mask = val_masks.to(device)
 
-            # Calculate metrics
-            iou = mean_iou(outputs, masks)
-            dice = dice_coef(outputs, masks)
-            class_dices = {
-                # Class 2 (typically NCR - necrotic tumor core)
-                2: class_dice(outputs, masks, 2),
-                # Class 3 (typically ET - enhancing tumor)
-                3: class_dice(outputs, masks, 3),
-                # Class 4 (typically ED - peritumoral edema)
-                4: class_dice(outputs, masks, 4)
-            }
+            # Get prediction
+            prediction = model(sample_image)
+            thresholded_pred = (prediction > 0.2).float()
 
-            total_iou += iou.item()
-            total_dice += dice.item()
-            for i in [2, 3, 4]:
-                total_class_dice[i] += class_dices[i].item()
+            # Use the prediction directly for dice calculation instead of calling evaluate_dice_scores
+            tc_dice = class_dice(thresholded_pred, sample_mask, 2).item()
+            ec_dice = class_dice(thresholded_pred, sample_mask, 3).item()
+            wt_dice = class_dice(thresholded_pred, sample_mask, 4).item()
 
-            num_batches += 1
+            dice_score_main = dice_coef(thresholded_pred, sample_mask).item()
+            mean_iou_score = mean_iou(thresholded_pred, sample_mask).item()
 
-    return {
-        "mean_iou": round(total_iou / num_batches, 2),
-        "dice_coef": round(total_dice / num_batches, 2),
-        "c_2": round(total_class_dice[2] / num_batches, 2),
-        "c_3": round(total_class_dice[3] / num_batches, 2),
-        "c_4": round(total_class_dice[4] / num_batches, 2)
+            results.append([tc_dice, ec_dice, wt_dice,
+                            dice_score_main, mean_iou_score])
+        print(
+            f"Sample Dice Scores - Tumor Core: {tc_dice:.4f}, Enhancing Tumor: {ec_dice:.4f}, Whole Tumor: {wt_dice:.4f}")
+
+    # get average of the results
+    print(results)
+    avg_tc_dice = sum([x[0] for x in results]) / len(results)
+    avg_ec_dice = sum([x[1] for x in results]) / len(results)
+    avg_wt_dice = sum([x[2] for x in results]) / len(results)
+    avg_dice_score_main = sum([x[3] for x in results]) / len(results)
+    avg_mean_iou = sum([x[4] for x in results]) / len(results)
+    # Calculate mean metrics
+    mean_metrics = {
+        "mean_iou": avg_mean_iou,
+        "dice_coef": avg_dice_score_main,
+        "c_2": avg_tc_dice,
+        "c_3": avg_ec_dice,
+        "c_4": avg_wt_dice
     }
 
+    return mean_metrics
 
-def snip_pruning(model, prune_ratio, train_loader, criterion=None):
+
+def snip_pruning(model, prune_ratio=0.3, val_loader=None):
     """
     Apply SNIP pruning to the model.
 
     The pruning process follows these steps:
-    1. Calculate connection sensitivities using a single batch
-    2. Create binary masks to keep most important connections
-    3. Apply masks to model weights
-    4. Calculate resulting sparsity
+    1. Get a batch of training data
+    2. Calculate connection sensitivity for each weight
+    3. Create binary masks based on sensitivity scores and pruning ratio
+    4. Apply masks to model weights
+    5. Calculate resulting sparsity
 
     Args:
         model: PyTorch model to prune
         prune_ratio: Percentage of weights to prune (0.0-1.0)
-        train_loader: DataLoader containing training data
-        criterion: Loss function to use (defaults to weighted BCE-Dice)
+        val_loader: Optional validation loader for evaluation
 
     Returns:
-        tuple: (pruned_model, sparsity_percentage, masks)
+        tuple: (pruned_model, sparsity_percentage)
     """
-    # Default to weighted BCE-Dice loss if none specified
-    if criterion is None:
-        criterion = nn.BCEWithLogitsLoss()
+    # Get a batch of training data
+    data_batch = prepare_data_batch()
 
-    # Calculate connection sensitivities
-    sensitivities = calculate_connection_sensitivity(model, train_loader, criterion)
-
-    # Create pruning masks
-    masks = create_pruning_mask(sensitivities, prune_ratio)
-
-    # Apply pruning masks
-    pruned_model = apply_pruning_masks(model, masks)
+    # Calculate connection sensitivity and create pruned model
+    pruned_model, sensitivity_scores, pruning_masks = calculate_connection_sensitivity(
+        model, data_batch, prune_ratio)
 
     # Calculate sparsity (percentage of zeroed weights)
     total_weights = 0
     zero_weights = 0
     for name, param in pruned_model.named_parameters():
-        if 'weight' in name:
+        if 'weight' in name and param.requires_grad:
             total_weights += param.numel()
             zero_weights += (param == 0).sum().item()
 
     sparsity = 100.0 * zero_weights / total_weights
 
-    return pruned_model, sparsity, masks
+    return pruned_model, sparsity, pruning_masks
 
 
-def main():
+def iterative_snip_pruning(model, iteration_prune_ratio, num_iterations, val_loader=None):
     """
-    Main function to execute the SNIP pruning pipeline.
+    Apply iterative SNIP pruning to the model over multiple iterations.
 
-    The pipeline consists of:
-    1. Loading the original model (at initialization or pretrained)
-    2. Creating a small batch loader for sensitivity calculation
-    3. Applying SNIP pruning at different ratios
-    4. Training and evaluating each pruned model
-    5. Saving all models and results
+    Args:
+        model: PyTorch model to prune
+        iteration_prune_ratio: Percentage of weights to prune per iteration (0.0-1.0)
+        num_iterations: Number of pruning iterations
+        val_loader: Optional validation loader for evaluation
+
+    Returns:
+        tuple: (pruned_model, sparsity_percentage)
     """
+    start_time = time.time()
+    current_model = copy.deepcopy(model)
+    cumulative_sparsity = 0.0
+
+    print(
+        f"Starting iterative pruning ({num_iterations} iterations with {iteration_prune_ratio * 100:.1f}% per iteration)")
+
+    for i in range(num_iterations):
+        print(f"\nIteration {i + 1}/{num_iterations}")
+        # Recalculate pruning ratio for this iteration
+        # We need to adjust the pruning ratio to account for previously pruned weights
+        if i > 0:
+            # Calculate the adjusted pruning ratio for this iteration
+            remaining_weights_ratio = 1.0 - (cumulative_sparsity / 100.0)
+            # How many weights to prune from the remaining weights
+            effective_prune_ratio = iteration_prune_ratio / remaining_weights_ratio
+        else:
+            effective_prune_ratio = iteration_prune_ratio
+
+        current_model, sparsity, _ = snip_pruning(current_model, effective_prune_ratio, val_loader)
+
+        # Calculate actual sparsity after this iteration
+        total_weights = 0
+        zero_weights = 0
+        for name, param in current_model.named_parameters():
+            if 'weight' in name and param.requires_grad:
+                total_weights += param.numel()
+                zero_weights += (param == 0).sum().item()
+
+        cumulative_sparsity = 100.0 * zero_weights / total_weights
+        print(f"  Iteration {i + 1} - Current sparsity: {cumulative_sparsity:.2f}%")
+
+        # Optional: Evaluate model after each iteration
+        if val_loader is not None:
+            metrics = evaluate_model(current_model, val_loader)
+            print(f"  Dice: {metrics['dice_coef']:.4f}, mIoU: {metrics['mean_iou']:.4f}")
+
+    training_time = time.time() - start_time
+
+    # Calculate channel pruning information
+    channels_pruned = 0
+    total_channels = 0
+    for name, param in current_model.named_parameters():
+        if 'weight' in name and param.requires_grad and param.dim() == 4:
+            total_channels += param.shape[0]
+            per_channel_sum = param.view(param.shape[0], -1).sum(dim=1)
+            channels_pruned += (per_channel_sum == 0).sum().item()
+
+    return current_model, cumulative_sparsity, training_time, channels_pruned, total_channels
+
+
+def run_pruning_experiment(model_path, pruning_type='one-shot', prune_ratio=0.3,
+                           iteration_ratio=0.05, num_iterations=6):
+
     # Load the original model
-    model_path = 'model/base_model/dlu_net_model_epoch_35.pth'
     original_model = load_trained_model(model_path)
     original_model.to(device)
 
-    # Define pruning ratios to try (10%, 20%, 30% as requested)
-    pruning_ratios = [0.1, 0.2, 0.3]
+    # load initial model
+    model = get_initial_model()
 
-    # Define loss criterion for sensitivity calculation
-    criterion = nn.BCEWithLogitsLoss()
+    # Print original model size
+    original_size = get_model_size(original_model)
+    print(f"Original Model size: {original_size / 1e6:.2f}M parameters")
 
-    # Evaluate original model first
+    # Prepare validation dataset
+    train_loader, val_loader, test_loader = get_data_loaders("data")
+
+    # Evaluate original model
     print("Evaluating original model...")
     original_metrics = evaluate_model(original_model, test_loader)
-    print(f"Original model metrics: {original_metrics}")
+    print("Original model metrics:")
+    for metric, value in original_metrics.items():
+        print(f"  {metric}: {value:.4f}")
 
-    results = []
-    for ratio in pruning_ratios:
-        print(f"\nApplying SNIP pruning with ratio {ratio}...")
+    # Apply pruning based on type
+    start_time = time.time()
 
-        # Reset model to original weights
-        model = get_initial_model()
-
-        # Apply SNIP pruning
-        pruned_model, sparsity, masks = snip_pruning(model, ratio, train_loader, criterion)
+    if pruning_type == 'one-shot':
+        print(f"\nApplying one-shot SNIP pruning (ratio: {prune_ratio * 100:.1f}%)...")
+        pruned_model, sparsity, pruning_masks = snip_pruning(
+            model, prune_ratio=prune_ratio, val_loader=val_loader)
 
         # Compute channel pruning information
         channels_pruned = 0
         total_channels = 0
-        for name, mask in masks.items():
-            if len(mask.shape) >= 2:  # For conv layers
-                out_channels = mask.shape[0]
-                total_channels += out_channels
-                # Count fully pruned output channels
-                pruned_channels = sum([mask[i].sum() == 0 for i in range(out_channels)])
-                channels_pruned += pruned_channels
+        for name, mask in pruning_masks.items():
+            if mask.dim() == 4:
+                total_channels += mask.shape[0]
+                per_channel_sum = mask.view(mask.shape[0], -1).sum(dim=1)
+                channels_pruned += (per_channel_sum == 0).sum().item()
 
-        # Check model size after pruning
-        pruned_size = get_model_size(pruned_model)
-        original_size = get_model_size(original_model)
-        reduction_percent = 100 * (1 - pruned_size / original_size)
+        training_time = time.time() - start_time
 
-        print(f"Pruned Model size: {pruned_size / 1e6:.2f}M parameters")
-        print(f"Size reduction: {reduction_percent:.2f}%")
-        print(f"Weight sparsity: {sparsity:.2f}%")
+    elif pruning_type == 'iterative':
+        print(
+            f"\nApplying iterative SNIP pruning ({num_iterations} iterations, {iteration_ratio * 100:.1f}% per iteration)...")
+        pruned_model, sparsity, training_time, channels_pruned, total_channels = iterative_snip_pruning(
+            model, iteration_ratio, num_iterations, test_loader)
 
-        # Evaluate pruned model
-        print("Evaluating pruned model...")
-        pruned_metrics = evaluate_model(pruned_model, test_loader)
-        print(f"Pruned model metrics: {pruned_metrics}")
+    else:
+        raise ValueError("Pruning type must be 'one-shot' or 'iterative'")
 
-        # Save pruned model
-        output_path = f'model/snip/snip_pruned_model_{int(ratio*100)}.pth'
-        torch.save(pruned_model, output_path)
-        print(f"Saved pruned model to {output_path}")
+    # Recalculate actual non-zero parameters
+    total_weights = 0
+    zero_weights = 0
+    for name, param in pruned_model.named_parameters():
+        if 'weight' in name and param.requires_grad:
+            total_weights += param.numel()
+            zero_weights += (param == 0).sum().item()
 
-        # Record results
-        result = {
-            "pruning_ratio": ratio,
-            "pruned_size": pruned_size,
-            "weight_sparsity": sparsity,
-            "pruned_metrics": pruned_metrics,
-            "reduction_percent": reduction_percent,
-            # Pruning details
-            "pruning_type": "SNIP",
-            "pruned_params": int(pruned_size),
-            "model_size_after_mb": pruned_size/1e6,
-            "sparsity": sparsity,
-            "channels_pruned": channels_pruned,
-            "total_channels": total_channels
-        }
-        results.append(result)
+    nonzero_params = total_weights - zero_weights
+    pruned_size = nonzero_params
+    param_reduction = (original_size - pruned_size) * 100 / original_size
 
-    # Convert tensor values to Python native types for JSON serialization
-    def convert_tensors_to_python(obj):
-        if isinstance(obj, torch.Tensor):
-            return obj.item() if obj.numel() == 1 else obj.tolist()
-        elif isinstance(obj, dict):
-            return {k: convert_tensors_to_python(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_tensors_to_python(item) for item in obj]
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, (np.int32, np.int64)):
-            return int(obj)
-        elif isinstance(obj, (np.float32, np.float64)):
-            return float(obj)
-        return obj
+    print(f"Pruned Model size: {pruned_size / 1e6:.2f}M parameters")
+    print(f"Sparsity achieved: {sparsity:.2f}%")
+    print(f"Parameter reduction: {param_reduction:.2f}%")
+    print(f"Training time: {training_time:.2f} seconds")
 
-    # Convert results to JSON-serializable format
-    json_serializable_results = convert_tensors_to_python(results)
+    # Evaluate pruned model
+    print("\nEvaluating pruned model...")
+    pruned_metrics = evaluate_model(pruned_model, val_loader)
+    print("Pruned model metrics:")
+    for metric, value in pruned_metrics.items():
+        print(f"  {metric}: {value:.4f}")
 
-    # Save all results to file
-    with open('model/snip/snip_pruning_results.json', 'w') as f:
-        json.dump(json_serializable_results, f, indent=4)
-    print("\nAll results saved to model/snip/snip_pruning_results.json")
+    # Save pruned model
+    model_filename = f"snip_{pruning_type}_{'_'.join([str(int(prune_ratio * 100)) if pruning_type == 'one-shot' else str(int(iteration_ratio * 100)) + 'x' + str(num_iterations)])}.pth"
+    model_save_path = os.path.join('model/snip/', model_filename)
+    torch.save(pruned_model.state_dict(), model_save_path)
+    print(f"Pruned model saved to {model_save_path}")
 
-    # Find best model based on metric preservation and size reduction
-    best_model_idx = 0
-    best_score = 0
+    # Save and compare on-disk sizes
+    dense_mb = os.path.getsize(model_path) / (1024 * 1024)
+    sparse_mb = os.path.getsize(model_save_path) / (1024 * 1024)
+    print(f"Dense saved model size: {dense_mb:.2f} MB")
+    print(f"Sparse saved model size: {sparse_mb:.2f} MB")
+
+    # Create metrics dictionary
+    results = {
+        "pruning_type": pruning_type,
+        "prune_ratio": prune_ratio if pruning_type == 'one-shot' else iteration_ratio * num_iterations,
+        "iteration_ratio": iteration_ratio if pruning_type == 'iterative' else None,
+        "num_iterations": num_iterations if pruning_type == 'iterative' else None,
+        "original_size": original_size,
+        "pruned_size": pruned_size,
+        "sparsity": sparsity,
+        "parameter_reduction": param_reduction,
+        "training_time": training_time,
+        "original_metrics": original_metrics,
+        "pruned_metrics": pruned_metrics,
+        "channels_pruned": channels_pruned,
+        "total_channels": total_channels,
+        "model_path": model_save_path,
+        "on_disk_size_mb": sparse_mb
+    }
+
+    return results
+
+
+def save_comparison_table(results_list, output_path='model/snip/snip_comparison_table.json'):
+    """
+    Save the comparison table data to a JSON file.
+
+    Args:
+        results_list: List of result dictionaries from run_pruning_experiment
+        output_path: Path to save the comparison table
+    """
+    table_data = {
+        "comparison_table": [
+            {
+                "method": "Baseline",
+                "pruning_ratio": "0%",
+                "dice": results_list[0]["original_metrics"]["dice_coef"],
+                "miou": results_list[0]["original_metrics"]["mean_iou"],
+                "param_reduction": "0%",
+                "training_time": "0"
+            }
+        ]
+    }
+
+    # Add each pruning method to the table
+    for result in results_list:
+        if result["pruning_type"] == "one-shot":
+            method_name = f"One-Shot ({int(result['prune_ratio'] * 100)}%)"
+        else:
+            method_name = f"Iterative ({int(result['iteration_ratio'] * 100)}% × {result['num_iterations']})"
+
+        table_data["comparison_table"].append({
+            "method": method_name,
+            "pruning_ratio": f"{result['prune_ratio'] * 100:.1f}%",
+            "dice": result["pruned_metrics"]["dice_coef"],
+            "miou": result["pruned_metrics"]["mean_iou"],
+            "param_reduction": f"{result['parameter_reduction']:.2f}%",
+            "training_time": f"{result['training_time']:.2f}s"
+        })
+
+    # Save to JSON
+    with open(output_path, 'w') as f:
+        json.dump(table_data, f, indent=4)
+
+    print(f"Comparison table saved to {output_path}")
+
+    # Print table for easy copy-paste to LaTeX
+    print("\nSNIP Pruning Comparison Table:")
+    print("\\begin{table}[htbp]")
+    print("\\centering")
+    print("\\caption{SNIP Pruning: One-Shot vs. Iterative Comparison}")
+    print("\\label{tab:snip_comparison}")
+    print("\\resizebox{\\textwidth}{!}{%")
+    print("\\begin{tabular}{lccccc}")
+    print("\\toprule")
+    print(
+        "\\textbf{Method} & \\textbf{Pruning Ratio} & \\textbf{Dice} & \\textbf{mIoU} & \\textbf{Param. Reduction} & \\textbf{Training Time} \\\\")
+    print("\\midrule")
+
+    for entry in table_data["comparison_table"]:
+        dice_val = f"{entry['dice']:.4f}" if isinstance(entry['dice'], float) else entry['dice']
+        miou_val = f"{entry['miou']:.4f}" if isinstance(entry['miou'], float) else entry['miou']
+        print(
+            f"{entry['method']} & {entry['pruning_ratio']} & {dice_val} & {miou_val} & {entry['param_reduction']} & {entry['training_time']} \\\\")
+
+    print("\\bottomrule")
+    print("\\end{tabular}%")
+    print("}")
+    print("\\end{table}")
+
+
+def main():
+    """
+    Main function to execute multiple SNIP pruning experiments.
+    """
+    model_path = 'model/base_model/dlu_net_model_epoch_35.pth'
+    results = []
+
+    # Run baseline evaluation (already included in each experiment, but we'll use the first one's baseline)
+    print("\n===== Running Experiment 1: One-Shot 10% Pruning =====")
+    results.append(run_pruning_experiment(model_path, 'one-shot', prune_ratio=0.1))
+
+    print("\n===== Running Experiment 2: One-Shot 20% Pruning =====")
+    results.append(run_pruning_experiment(model_path, 'one-shot', prune_ratio=0.2))
+
+    print("\n===== Running Experiment 2: One-Shot 30% Pruning =====")
+    results.append(run_pruning_experiment(model_path, 'one-shot', prune_ratio=0.3))
+
+    # print("\n===== Running Experiment 3: Iterative Pruning (10% × 6) =====")
+    # results.append(run_pruning_experiment(model_path, 'iterative', iteration_ratio=0.10, num_iterations=6))
+    #
+    # print("\n===== Running Experiment 4: Iterative Pruning (20% × 3) =====")
+    # results.append(run_pruning_experiment(model_path, 'iterative', iteration_ratio=0.20, num_iterations=3))
+
+    # Save detailed results for each experiment
     for i, result in enumerate(results):
-        # Calculate a combined score (size reduction * performance preservation)
-        metric_preservation = result["pruned_metrics"]["dice_coef"] / original_metrics["dice_coef"]
-        size_reduction = result["reduction_percent"] / 100
-        combined_score = metric_preservation * size_reduction
+        output_path = f"model/snip/snip_experiment_{i + 1}_details.json"
+        with open(output_path, 'w') as f:
+            json.dump(result, f, indent=4)
+        print(f"Detailed results for experiment {i + 1} saved to {output_path}")
 
-        if combined_score > best_score:
-            best_score = combined_score
-            best_model_idx = i
+    # Generate the comparison table for LaTeX
+    save_comparison_table(results)
 
-    best_result = results[best_model_idx]
-    print("\nBest pruning configuration:")
-    print(f"Pruning ratio: {best_result['pruning_ratio']}")
-    print(f"Parameter reduction: {best_result['reduction_percent']:.2f}%")
-    print(f"Dice coefficient: {best_result['pruned_metrics']['dice_coef']:.4f}")
-    print(f"Weight sparsity: {best_result['weight_sparsity']:.2f}%")
+    # Optionally log to MLflow
+    for result in results:
+        config = {
+            "pruning_type": result["pruning_type"],
+            "prune_ratio": result["prune_ratio"]
+        }
+        if result["pruning_type"] == "iterative":
+            config.update({
+                "iteration_ratio": result["iteration_ratio"],
+                "num_iterations": result["num_iterations"]
+            })
 
-
-def statistics():
-    device = torch.device("mps")
-
-    snip_model = load_trained_model("model/snip/snip_pruned_model_20.pth")
-    original_model = load_trained_model("model/base_model/dlu_net_model_epoch_35.pth")
-
-    snip_model = snip_model.to(device)
-    original_model = original_model.to(device)
-
-    # 5. compare the current base model vs this model
-    print("\n===== PERFORMANCE METRICS =====")
-
-    # Create and save comparison metrics
-    original_model_metrics = ModelPerformanceMetrics("Original_DLU_Net")
-    original_model_metrics.extract_metrics_from_model(
-        original_model
-    )
-
-    pruned_model_metrics = ModelPerformanceMetrics("SNIP Pruned Model")
-    pruned_model_metrics.extract_metrics_from_model(
-        snip_model
-    )
-
-    # Benchmark using entire validation loader
-    pruned_model_metrics.benchmark_inference_speed(snip_model, val_loader)
-    original_model_metrics.benchmark_inference_speed(
-        original_model, val_loader)
-
-    model_comparison = ModelComparison(
-        original_model_metrics, pruned_model_metrics)
-
-    model_comparison.calculate_speedup()
-    model_comparison.print_summary()
+        experiment = setup_experiment(f"SNIP {result['pruning_type'].title()} Pruning", None, config)
+        experiment.log_metrics({
+            "dice_coef": result["pruned_metrics"]["dice_coef"],
+            "mean_iou": result["pruned_metrics"]["mean_iou"],
+            "sparsity": result["sparsity"],
+            "parameter_reduction": result["parameter_reduction"],
+            "training_time": result["training_time"]
+        })
+        experiment.log_artifact(result["model_path"])
+        experiment.end_run()
 
 
 if __name__ == "__main__":
     main()
-    # statistics()

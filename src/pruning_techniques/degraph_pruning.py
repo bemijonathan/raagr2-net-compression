@@ -1,19 +1,17 @@
 from utils.stats import ModelPerformanceMetrics, ModelComparison
 import random
 from torch.utils.data import Dataset, DataLoader
-from utils.load_data import BrainDataset
+from utils.load_data import BrainDataset, get_data_loaders
 import torch
 import torch_pruning as tp
-from architecture.shared_model import load_trained_model, class_dice, mean_iou
+from architecture.model import load_trained_model, class_dice, mean_iou
 from utils.custom_metric import dice_coef
 import os
 import json
 
-from src.architecture.shared_model import DLUNet
 
-original_model_path = 'model/shared/dlu_net_model_epoch_35.pth'
+device = torch.device("cuda")
 
-# Prepare metrics functions
 metric_functions = {
     "mean_iou": mean_iou,
     "dice_coef": dice_coef,
@@ -22,31 +20,18 @@ metric_functions = {
     "c_4": class_dice,
 }
 
-
 def main():
-
-    device = torch.device("mps")
-
     # Load the original model once
-    # original_model = torch.load(original_model_path, weights_only=False, map_location=device)
-    # original_model.to(device)
-
-    original_model = DLUNet(in_channels=4)
-
-    state_dict = torch.load(original_model_path, map_location=device)
-    original_model.load_state_dict(state_dict)
+    original_model = load_trained_model(
+        'model/base_model/dlu_net_model_epoch_35.pth')
     original_model.to(device)
-
-    print(original_model)
 
     original_size = sum(p.numel()
                         for p in original_model.parameters() if p.requires_grad)
     print(f"Original Model size: {original_size / 1e6:.2f}M")
 
     # Prepare data
-    train_data = r"./data"
-    val_dataset = BrainDataset(train_data, "val")
-    val_loader = DataLoader(val_dataset, batch_size=8)
+    train_loader, val_loader, test_loader = get_data_loaders("data")
     val_images, val_masks = next(iter(val_loader))
 
     random_idx = random.randint(0, val_images.shape[0]-1)
@@ -56,17 +41,19 @@ def main():
                             1].to(device)    # Corresponding mask
     print(f"Sample image shape: {sample_image.shape}")
 
+    # Prepare metrics functions
+
 
     eval_data = (sample_image, sample_mask)
 
     # Extract metrics for original model once
-    original_metrics = ModelPerformanceMetrics("Original_Shared_DLU_Net")
+    original_metrics = ModelPerformanceMetrics("Original_DLU_Net")
     print("Evaluating original model metrics...")
     try:
         original_metrics.extract_metrics_from_model(
             original_model,
             input_data=sample_image,
-            model_path='',
+            model_path='model/dlu_net_model_best.pth',
             eval_data=eval_data,
             metric_functions=metric_functions
         )
@@ -82,7 +69,7 @@ def main():
         print(f"\n\n===== PRUNING WITH RATIO {ratio:.1f} =====")
 
         # Create a fresh copy of the model for this pruning ratio
-        model = load_trained_model(original_model_path)
+        model = load_trained_model('model/base_model/dlu_net_model_epoch_35.pth')
         model.to(device)
 
         # Identify layers to ignore
@@ -110,7 +97,7 @@ def main():
         pruner.step()
 
         # Save pruned model
-        model_save_path = f'model/depgraph/shared_pruned_net_ratio_{int(ratio*100)}.pth'
+        model_save_path = f'model/depgraph/pruned_dlu_net_ratio_{int(ratio*100)}.pth'
         if os.path.exists(model_save_path):
             os.remove(model_save_path)
 
@@ -180,9 +167,9 @@ def main():
     }
 
     os.makedirs('model/depgraph', exist_ok=True)
-    with open('model/depgraph/mixed_shared.json', 'w') as f:
+    with open('model/depgraph/multi_ratio_pruning_metrics.json', 'w') as f:
         json.dump(results_data, f, indent=4)
-    print("\nAll metrics saved to model/depgraph/mixed_shared.json")
+    print("\nAll metrics saved to model/depgraph/multi_ratio_pruning_metrics.json")
 
     # Print summary comparison of all pruning ratios
     print("\n===== SUMMARY OF ALL PRUNING RATIOS =====")
@@ -196,8 +183,6 @@ def main():
             mean_iou = pruning_results[ratio_key]["metrics"].get("mean_iou", "N/A")
             print(
                 f"{ratio:.1f}   | {param_red:.2f}%          | {similarity:.4f}    | {mean_iou}")
-
-
 
 if __name__ == "__main__":
     main()

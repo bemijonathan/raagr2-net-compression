@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 
 # Set GPU device if available
-device = torch.device("mps")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Helper functions for visualization - these can remain largely the same
 
@@ -113,10 +113,6 @@ def mean_iou(y_pred, y_true):
 
 def weighted_bce_dice_loss(y_pred, y_true, weight_bce=0.5):
     """Combined weighted BCE and Dice loss"""
-    # Ensure input values are in the valid range [0, 1]
-    y_pred = torch.clamp(y_pred, 0, 1)
-    y_true = torch.clamp(y_true, 0, 1)
-
     bce = F.binary_cross_entropy(y_pred, y_true)
     dice = dice_loss(y_pred, y_true)
     return weight_bce * bce + (1 - weight_bce) * dice
@@ -266,16 +262,10 @@ class ReASPP3(nn.Module):
     def __init__(self, in_channels, out_channels, r=3):
         super(ReASPP3, self).__init__()
 
-        # Calculate groups to ensure compatibility
-        import math
-        groups = math.gcd(in_channels, out_channels)
-        # Ensure groups is at least 1
-        groups = max(1, groups)
-
         # Standard convolution path
         self.conv1_1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                      padding=1, groups=groups),
+                      padding=1, groups=in_channels),
             nn.Conv2d(out_channels, out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
@@ -290,7 +280,7 @@ class ReASPP3(nn.Module):
         # Dilated conv path 1
         self.conv2_1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                      padding=r, dilation=r, groups=groups),
+                      padding=r, dilation=r, groups=in_channels),
             nn.Conv2d(out_channels, out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
@@ -305,8 +295,7 @@ class ReASPP3(nn.Module):
         # Dilated conv path 2
         self.conv3_1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                      padding=r*2, dilation=r*2, groups=groups),
-            nn.Conv2d(out_channels, out_channels, kernel_size=1),
+                      padding=r*2, dilation=r*2),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -320,8 +309,7 @@ class ReASPP3(nn.Module):
         # Dilated conv path 3
         self.conv4_1 = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3,
-                      padding=r*3, dilation=r*3, groups=groups),
-            nn.Conv2d(out_channels, out_channels, kernel_size=1),
+                      padding=r*3, dilation=r*3),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )

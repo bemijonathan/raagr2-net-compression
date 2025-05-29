@@ -14,10 +14,18 @@ def main():
 
     # models to analyze
     models = {
-        "base_model": "model/dlu_net_model_epoch_58.pth",
-        "snip_model": "model/pruned_pretrained/snip_pruned/dlu_net_model_epoch_10.pth",
-        "magnitude_model": "model/pruned_pretrained/magnitude/dlu_net_model_epoch_10.pth",
-        "slimmed_model": "model/pruned_pretrained/slimmed/dlu_net_model_epoch_10.pth",
+        "base_model": "model/base_model/dlu_net_model_epoch_35.pth",
+        "snip_model_10": "model/snip/dlu_net_model_epoch_10.pth",
+        "snip_model_20": "model/snip/dlu_net_model_epoch_20.pth",
+        "snip_model_30": "model/snip/dlu_net_model_epoch_30.pth",
+        "magnitude_10": "model/magnitude/dlu_net_model_epoch_10.pth",
+        "magnitude_20": "model/magnitude/dlu_net_model_epoch_20.pth",
+        "magnitude_30": "model/magnitude/dlu_net_model_epoch_30.pth",
+        "slimmed_10": "model/slimmed/dlu_net_model_epoch_30.pth",
+        "slimmed_20": "model/slimmed/dlu_net_model_epoch_30.pth",
+        "slimmed_30": "model/slimmed/dlu_net_model_epoch_30.pth",
+        "shared": "model/shared/dlu_net_model_epoch_35.pth",
+        "reduced_shared":"model/reduced_shared/dlu_net_model_epoch_35.35pth"
     }
 
     # prepare evaluation data

@@ -35,7 +35,8 @@ class ModelPerformanceMetrics:
         }
         self.recorded_at = None
 
-    def benchmark_inference_speed(self, model: torch.nn.Module, input_data: torch.Tensor, iterations: int = 50) -> float:
+    def benchmark_inference_speed(self, model: torch.nn.Module, input_data: torch.Tensor, iterations: int = 50,
+                                  cooling_time: float = 0.1) -> float:
         """
         Benchmark the inference speed of the model using real input data.
 
@@ -43,32 +44,52 @@ class ModelPerformanceMetrics:
             model: The PyTorch model to evaluate
             input_data: Input data for benchmarking
             iterations: Number of inference runs to average over
+            cooling_time: Time in seconds to wait between runs to let GPU cool down
 
         Returns:
             Average inference time in seconds per sample
         """
         # Ensure model is in evaluation mode
         model.eval()
+        device = next(model.parameters()).device
 
         try:
             # Warm up the model
             with torch.no_grad():
                 _ = model(input_data)
+                if device.type == 'cuda':
+                    torch.cuda.synchronize()
 
             # Benchmark
-            start_time = time.time()
+            times = []
             with torch.no_grad():
                 for _ in range(iterations):
-                    _ = model(input_data)
-            end_time = time.time()
+                    # Clear GPU cache before each run
+                    if device.type == 'cuda':
+                        torch.cuda.empty_cache()
+                        torch.cuda.synchronize()
 
-            avg_time = (end_time - start_time) / iterations
+                    start_time = time.time()
+                    _ = model(input_data)
+
+                    # Synchronize GPU
+                    if device.type == 'cuda':
+                        torch.cuda.synchronize()
+
+                    end_time = time.time()
+                    times.append(end_time - start_time)
+
+                    # Cooling period between runs
+                    time.sleep(cooling_time)
+
+            avg_time = sum(times) / len(times)
             self.metrics["inference_speed"] = avg_time * 1000  # Convert to ms
             return avg_time
         except RuntimeError as e:
             print(f"Error during inference benchmarking: {e}")
             self.metrics["inference_speed"] = None
             return 0.0
+
 
     def measure_inference_speed(self, model: torch.nn.Module, input_shape: tuple, num_runs: int = 100) -> float:
         """
@@ -537,115 +558,3 @@ class ModelComparison:
             flop_reduction = (
                 1 - self.pruned.metrics['flops']/self.baseline.metrics['flops'])*100
             print(f"FLOPs reduction: {flop_reduction:.2f}%")
-
-
-
-
-def track_memory_usage(func):
-    """
-    Decorator to track memory usage during function execution.
-
-    Args:
-        func: Function to track
-
-    Returns:
-        Wrapped function with memory tracking
-    """
-    def wrapper(*args, **kwargs):
-        # Clear memory before starting
-        gc.collect()
-        torch.cuda.empty_cache() if torch.cuda.is_available() else None
-
-        # Get initial memory usage
-        initial_gpu = get_gpu_info() if torch.cuda.is_available() else None
-        initial_memory = get_memory_footprint()
-
-        # List to store memory samples
-        memory_samples = []
-        peak_gpu_memory = 0 if torch.cuda.is_available() else None
-
-        # Start time
-        start_time = time.time()
-
-        # Start memory sampling thread
-        import threading
-        stop_sampling = threading.Event()
-
-        def sample_memory():
-            while not stop_sampling.is_set():
-                # Get current GPU memory
-                if torch.cuda.is_available():
-                    current_gpu_allocated = torch.cuda.memory_allocated() / (1024**3)
-                    peak_gpu_memory = max(
-                        peak_gpu_memory, current_gpu_allocated)
-
-                # Get RAM usage
-                current_memory = get_memory_footprint()
-                memory_samples.append(current_memory["ram_usage_gb"])
-
-                # Sleep to avoid too frequent sampling
-                time.sleep(0.1)
-
-        # Start sampling thread
-        sampling_thread = threading.Thread(target=sample_memory)
-        sampling_thread.daemon = True
-        sampling_thread.start()
-
-        try:
-            # Execute the function
-            result = func(*args, **kwargs)
-
-            # Stop memory sampling
-            stop_sampling.set()
-            sampling_thread.join(timeout=1.0)
-
-            # Final memory measurements
-            final_gpu = get_gpu_info() if torch.cuda.is_available() else None
-            final_memory = get_memory_footprint()
-
-            # Calculate memory statistics
-            memory_stats = {
-                "peak_ram_gb": max(memory_samples) if memory_samples else 0,
-                "avg_ram_gb": sum(memory_samples) / len(memory_samples) if memory_samples else 0,
-                "initial_ram_gb": initial_memory["ram_usage_gb"],
-                "final_ram_gb": final_memory["ram_usage_gb"],
-                "execution_time_sec": time.time() - start_time
-            }
-
-            if torch.cuda.is_available():
-                memory_stats["peak_gpu_gb"] = peak_gpu_memory
-                memory_stats["initial_gpu_gb"] = initial_gpu["allocated_memory_gb"]
-                memory_stats["final_gpu_gb"] = final_gpu["allocated_memory_gb"]
-
-            # Print the memory statistics
-            print("\nMemory Usage Statistics:")
-            print(f"  Peak RAM: {memory_stats['peak_ram_gb']:.2f} GB")
-            print(f"  Average RAM: {memory_stats['avg_ram_gb']:.2f} GB")
-            print(
-                f"  RAM Change: {memory_stats['final_ram_gb'] - memory_stats['initial_ram_gb']:.2f} GB")
-            print(
-                f"  Execution Time: {memory_stats['execution_time_sec']:.2f} seconds")
-
-            if torch.cuda.is_available():
-                print(
-                    f"  Peak GPU Memory: {memory_stats['peak_gpu_gb']:.2f} GB")
-                print(
-                    f"  GPU Memory Change: {memory_stats['final_gpu_gb'] - memory_stats['initial_gpu_gb']:.2f} GB")
-
-            # Add memory stats to result if it's a dictionary
-            if isinstance(result, tuple) and len(result) > 0 and isinstance(result[-1], dict):
-                result[-1]["memory_stats"] = memory_stats
-                return result
-            elif isinstance(result, dict):
-                result["memory_stats"] = memory_stats
-                return result
-            else:
-                return result, memory_stats
-
-        except Exception as e:
-            stop_sampling.set()
-            if sampling_thread.is_alive():
-                sampling_thread.join(timeout=1.0)
-            raise e
-
-    return wrapper

@@ -89,8 +89,9 @@ def resume_training(
     # Load checkpoint
     if os.path.exists(resume_checkpoint_path):
         print(f"Loading checkpoint from {resume_checkpoint_path}")
-        model.load_state_dict(torch.load(
-            resume_checkpoint_path, weights_only=False))
+        # model.load_state_dict(
+        torch.load(resume_checkpoint_path, weights_only=False)
+        # )
         print(f"Resuming training from epoch {starting_epoch}")
         mlflow_experiment.log_param(
             "resumed_from_checkpoint", resume_checkpoint_path)

@@ -1,52 +1,21 @@
-"""
-Magnitude-Based Pruning for Neural Networks
-
-This script implements magnitude-based pruning for neural network compression,
-based on the approach described in the following research papers:
-
-1. "Learning both Weights and Connections for Efficient Neural Networks"
-   by Song Han, Jeff Pool, John Tran, and William J. Dally (2015)
-   https://arxiv.org/abs/1506.02626
-
-2. "To prune, or not to prune: exploring the efficacy of pruning for model compression"
-   by Michael Zhu and Suyog Gupta (2017)
-   https://arxiv.org/abs/1710.01878
-
-Magnitude-based pruning removes parameters based on their absolute magnitude,
-operating on the principle that smaller weights contribute less to the final
-output and can be removed with minimal impact on model performance.
-
-This implementation applies channel/filter pruning in convolutional neural networks
-by calculating the L2-norm of each filter and removing those with the smallest magnitudes.
-"""
-
 import torch
-import torch.nn as nn
 import numpy as np
 from utils.stats import ModelPerformanceMetrics, ModelComparison
-from utils.load_data import BrainDataset
+from utils.load_data import BrainDataset, get_data_loaders
 from torch.utils.data import DataLoader
-from architecture.model import load_trained_model, class_dice
-from utils.custom_metric import dice_coef, mean_iou
-import os
+from architecture.model import load_trained_model, class_dice, mean_iou
+from utils.custom_metric import dice_coef
 import json
 import copy
+import time
 from src.CONFIGS import batch_size
 
 # Set device to Metal Performance Shaders (MPS) for accelerated computation on Mac
-device = torch.device("mps")
+device = torch.device("cuda")
 
 
 def get_model_size(model):
-    """
-    Calculate and return the number of trainable parameters in the model.
 
-    Args:
-        model: PyTorch model
-
-    Returns:
-        int: Total number of trainable parameters
-    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
@@ -128,60 +97,58 @@ def apply_pruning_masks(model, masks):
     return model
 
 
-def evaluate_model(model, val_loader, batch_size=8):
-    """
-    Evaluate model on validation data.
-
-    Computes multiple metrics relevant for medical image segmentation:
-    - Mean IoU (Intersection over Union)
-    - Dice coefficient (overall)
-    - Class-specific Dice coefficients for each segmentation class
-
-    Args:
-        model: PyTorch model
-        val_loader: Validation data loader
-        batch_size: Batch size for evaluation
-
-    Returns:
-        dict: Dictionary of evaluation metrics
-    """
+def evaluate_model(model, test_loader):
     model.eval()
     total_iou = 0
     total_dice = 0
     total_class_dice = {2: 0, 3: 0, 4: 0}
     num_batches = 0
 
+    # Initialize timing variables
+    total_samples = 0
+    results = []
+
     with torch.no_grad():
-        for images, masks in val_loader:
-            images = images.to(device)
-            masks = masks.to(device)
-            outputs = model(images)
+        for val_images, val_masks in test_loader:
+            # Get the first sample
+            sample_image = val_images.to(device)
+            sample_mask = val_masks.to(device)
 
-            # Calculate metrics
-            iou = mean_iou(outputs, masks)
-            dice = dice_coef(outputs, masks)
-            class_dices = {
-                # Class 2 (typically NCR - necrotic tumor core)
-                2: class_dice(outputs, masks, 2),
-                # Class 3 (typically ET - enhancing tumor)
-                3: class_dice(outputs, masks, 3),
-                # Class 4 (typically ED - peritumoral edema)
-                4: class_dice(outputs, masks, 4)
-            }
+            # Get prediction
+            prediction = model(sample_image)
+            thresholded_pred = (prediction > 0.2).float()
 
-            total_iou += iou.item()
-            total_dice += dice.item()
-            for i in [2, 3, 4]:
-                total_class_dice[i] += class_dices[i].item()
+            # Use the prediction directly for dice calculation instead of calling evaluate_dice_scores
+            tc_dice = class_dice(prediction, sample_mask, 2).item()
+            ec_dice = class_dice(prediction, sample_mask, 3).item()
+            wt_dice = class_dice(prediction, sample_mask, 4).item()
 
-            num_batches += 1
+            dice_score_main = dice_coef(prediction, sample_mask).item()
+            mean_iou_score = mean_iou(prediction, sample_mask).item()
+
+            results.append([tc_dice, ec_dice, wt_dice,
+                            dice_score_main, mean_iou_score])
+        print(
+            f"Sample Dice Scores - Tumor Core: {tc_dice:.4f}, "
+            f"Enhancing Tumor: {ec_dice:.4f}, "
+            f"Whole Tumor: {wt_dice:.4f}"
+        )
+
+        # get average of the results
+    print(results)
+    avg_tc_dice = sum([x[0] for x in results]) / len(results)
+    avg_ec_dice = sum([x[1] for x in results]) / len(results)
+    avg_wt_dice = sum([x[2] for x in results]) / len(results)
+    avg_dice_score_main = sum([x[3] for x in results]) / len(results)
+    avg_mean_iou = sum([x[4] for x in results]) / len(results)
+
 
     return {
-        "mean_iou": round(total_iou / num_batches, 2),
-        "dice_coef": round(total_dice / num_batches, 2),
-        "c_2": round(total_class_dice[2] / num_batches, 2),
-        "c_3": round(total_class_dice[3] / num_batches, 2),
-        "c_4": round(total_class_dice[4] / num_batches, 2)
+        "mean_iou": avg_mean_iou,
+        "dice_coef": avg_dice_score_main,
+        "c_2": avg_tc_dice.real,
+        "c_3": avg_ec_dice.real,
+        "c_4": avg_wt_dice.real,
     }
 
 
@@ -240,7 +207,7 @@ def main():
     6. Saving all models and results
     """
     # Load the original model
-    model_path = 'model/dlu_net_model_epoch_20.pth'
+    model_path = 'model/base_model/dlu_net_model_epoch_35.pth'
     original_model = load_trained_model(model_path)
     original_model.to(device)
 
@@ -251,20 +218,17 @@ def main():
     original_size = get_model_size(original_model)
     print(f"Original Model size: {original_size / 1e6:.2f}M parameters")
 
-    # Load validation data
-    train_data = r"./data"
-    val_dataset = BrainDataset(train_data, "val")
-    val_loader = DataLoader(val_dataset, batch_size=8)
+    train_loader, val_loader, test_loader = get_data_loaders("data")
 
     # Evaluate original model
     print("Evaluating original model...")
-    original_metrics = evaluate_model(original_model, val_loader)
+    original_metrics = evaluate_model(original_model, test_loader)
     print(f"Original model metrics: {original_metrics}")
 
     # Define pruning ratios to try
     # Based on empirical studies, optimal pruning typically falls in the 20-60% range
     # for neural networks (Han et al., 2015; Zhu & Gupta, 2017)
-    pruning_ratios = [0.3, 0.4, 0.5]
+    pruning_ratios = [0.1, 0.2, 0.3]
 
     results = []
     for ratio in pruning_ratios:
@@ -275,7 +239,7 @@ def main():
 
         # Apply pruning
         pruned_model, sparsity, masks = magnitude_based_pruning(
-            model, ratio, val_loader)
+            model, ratio, test_loader)
         # Compute channel pruning information
         channels_pruned = 0
         total_channels = 0
@@ -293,11 +257,11 @@ def main():
 
         # Evaluate pruned model
         print(f"Evaluating pruned model...")
-        pruned_metrics = evaluate_model(pruned_model, val_loader)
+        pruned_metrics = evaluate_model(pruned_model, test_loader)
         print(f"Pruned model metrics: {pruned_metrics}")
 
         # Save pruned model
-        output_path = f'model/magnitude_pruned_model_{int(ratio*100)}.pth'
+        output_path = f'model/magnitude/magnitude_pruned_model_{int(ratio*100)}.pth'
         torch.save(pruned_model, output_path)
         print(f"Saved pruned model to {output_path}")
 
@@ -323,9 +287,9 @@ def main():
         results.append(result)
 
     # Save all results to file
-    with open('model/magnitude_pruning_results.json', 'w') as f:
+    with open('model/magnitude/magnitude_pruning_results.json', 'w') as f:
         json.dump(results, f, indent=4)
-    print("\nAll results saved to model/magnitude_pruning_results.json")
+    print("\nAll results saved to model/magnitude/magnitude_pruning_results.json")
 
     # Find best model based on metric preservation and size reduction
     # This is a multi-objective optimization problem where we want to:
@@ -353,38 +317,43 @@ def main():
     print(f"Weight sparsity: {best_result['weight_sparsity']:.2f}%")
 
 
+
+
 def statistics():
-    device = torch.device("mps")
 
-    data_path = "data/"
-    val_dataset = BrainDataset(data_path, "val")
-    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    train_loader, val_loader, test_loader = get_data_loaders("data")
 
-    shared_model = load_trained_model(
-        "model/pruned_pretrained/magnitude/dlu_net_model_epoch_10.pth")
-    original_model = load_trained_model("model/dlu_net_model_epoch_58.pth")
+    X_val, y_val = val_loader
+
+
+    shared_model = torch.load("model/magnitude/magnitude_pruned_model_10.pth", weights_only=False)
+    original_model = load_trained_model("model/base_model/dlu_net_model_epoch_35.pth")
 
     shared_model = shared_model.to(device)
     original_model = original_model.to(device)
+
 
     # 5. compare the current base model vs this model
     print("\n===== PERFORMANCE METRICS =====")
 
     # Create and save comparison metrics
-    original_model_metrics = ModelPerformanceMetrics("Original_DLU_Net")
-    original_metrics = original_model_metrics.extract_metrics_from_model(
-        original_model
-    )
 
     pruned_model_metrics = ModelPerformanceMetrics("Magnitude Pruned Model")
     pruned_metrics = pruned_model_metrics.extract_metrics_from_model(
-        shared_model
+        shared_model,
+        X_val.to(device),
+        X_val.shape
     )
 
-    # Benchmark using entire validation loader
-    pruned_model_metrics.benchmark_inference_speed(shared_model, val_loader)
-    original_model_metrics.benchmark_inference_speed(
-        original_model, val_loader)
+
+    original_model_metrics = ModelPerformanceMetrics("Original_DLU_Net")
+    original_metrics = original_model_metrics.extract_metrics_from_model(
+        original_model,
+        X_val.to(device),
+        X_val.shape
+    )
+
+
 
     model_comparison = ModelComparison(
         original_model_metrics, pruned_model_metrics)
@@ -393,6 +362,8 @@ def statistics():
     model_comparison.print_summary()
 
 
+
+
 if __name__ == "__main__":
-    # main()
-    statistics()
+    main()
+    # statistics()
