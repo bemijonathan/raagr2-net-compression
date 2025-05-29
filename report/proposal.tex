@@ -1,0 +1,107 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx}
+\usepackage{algorithm2e}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{enumitem}
+
+
+\title{Slim Models Creation using Pruning and Sharing Weights on RAAGR2-Net Models}
+\author{Jonathan Atiene \\ \texttt{P2839161@my365.dmu.ac.u} \and \vspace{0.5em} Supervisor: Dr. Aboozar Taherkhani \\ De Montfort University, Leicester, UK}
+\date{}
+
+\begin{document}
+\maketitle
+\onehalfspacing
+
+\section{Background}
+Modern deep neural networks have achieved exceptional accuracy and precision in prediction, segmentation, and classification tasks within the medical domain. Convolutional neural networks and encoder-decoder architectures have become the backbone of many medical imaging systems. However, these advances come with substantial computational demands. In particular, the three-dimensional visualization required for medical artifacts results in large input sizes and high image resolutions, which, in turn, drive up both training and inference costs. This challenge is especially common in clinical settings where computational resources are limited.
+
+\section{Introduction}
+The increasing complexity of deep segmentation networks has heightened accuracy in brain tumor delineation but simultaneously hindered their deployment in real-time clinical and edge settings. This research focuses on the RAAGR2-Net architecture, which integrates recurrent residual blocks, spatial attention, and atrous spatial pyramid pooling for brain tumor segmentation. While RAAGR2-Net achieves excellent segmentation results, its high computational demands present significant barriers to deployment in clinical environments.
+
+\section{Proposed Work}
+This project aims to reduce computational costs and model size in brain tumor segmentation applications while preserving diagnostic accuracy. The work will evaluate multiple pruning techniques and introduce a novel weight-sharing module to develop optimized RAAGR2-Net models for clinical deployment.
+
+\subsection{Aims}
+\begin{itemize}[label=--]
+    \item Minimize computational cost and model size of RAAGR2-Net.
+    \item Preserve or enhance tumor segmentation accuracy.
+    \item Evaluate and compare multiple pruning techniques.
+    \item Develop weight-sharing modules for parameter reduction.
+\end{itemize}
+
+\subsection{Specific Objectives}
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item \textbf{Implement and Evaluate Four Pruning Techniques:}
+    \begin{itemize}[label=--]
+        \item \textbf{Magnitude-based Pruning:} Remove filters in convolutional layers based on their L₂ norm magnitudes.
+        \item \textbf{Network Slimming:} Apply L1 regularization to batch normalization scaling factors to identify and remove less important channels.
+        \item \textbf{SNIP (Single-shot Network Pruning):} Evaluate connection sensitivity at initialization to identify parameters that can be removed.
+        \item \textbf{Dependency Graph Pruning:} Analyze the network's dependency structure to ensure consistent dimensionality adjustments throughout the model.
+    \end{itemize}
+
+    \item \textbf{Develop  SharedDepthwiseBlock for Weight Sharing:}
+    \begin{itemize}[label=--]
+        \item Design a novel shared-weight module that enables weight sharing across different branches of the ReASPP3 module.
+        \item Implement a single set of depthwise convolutional weights (kernel size 3×3) shared across all dilation rates, while maintaining separate pointwise (1×1) convolutions for each branch.
+        \item Analyze the resulting parameter reduction and impact on segmentation performance.
+        \item Create more variations like paired weight sharing and weight sharing between encoder and decoder blocks
+    \end{itemize}
+    
+    \item \textbf{Evaluate Model Efficiency and Accuracy:}
+    \begin{itemize}[label=--]
+        \item Quantify reductions in model size, inference time, and memory consumption after applying each compression technique.
+        \item Assess the impact on tumor detection accuracy using standard metrics such as the Dice coefficient, mean IoU, and class-specific performance (NCR/NET, ED, ET).
+        \item Compare different pruning ratios (10%, 20%, 30%, etc.) to identify optimal compression levels.
+    \end{itemize}
+    
+    \item \textbf{Combine Pruning with Weight Sharing:}
+    \begin{itemize}[label=--]
+        \item Explore synergistic effects of combining different pruning techniques with the SharedDepthwiseBlock.
+        \item Evaluate extreme compression scenarios (50%-90% parameter reduction) to determine practical limits.
+        \item Analyze accuracy-efficiency trade-offs for combined approaches.
+    \end{itemize}
+\end{enumerate}
+
+\section{Research Questions}
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item How do magnitude-based pruning, network slimming, SNIP, and dependency-graph pruning compare in terms of parameter reduction and segmentation accuracy when applied to RAAGR2-Net for brain tumor segmentation?
+    \item To what extent can the SharedDepthwiseBlock reduce parameters in the ReASPP3 module without compromising segmentation performance?
+    \item What are the optimal pruning ratios for each technique that maintain clinically acceptable segmentation accuracy (Dice score $>$0.85)?
+    \item How do combined approaches (pruning + weight sharing) perform compared to individual techniques in terms of model size reduction and inference speedup?
+    \item What practical trade-offs emerge between model compression and segmentation accuracy, especially for high compression ratios ($>$70%)?
+    \item How does pruning affect the performance on different tumor subregions (necrotic core, enhancing tumor, and edema)?
+    \item Can the optimized RAAGR2-Net variants achieve at least 2x inference speedup while maintaining $>$95% of the original segmentation accuracy?
+\end{enumerate}
+
+\section{Project Requirements}
+\subsection{Pruning and Weight Sharing Methods}
+\begin{itemize}[label=--]
+    \item Implement magnitude-based pruning to remove filters with low L₂ norms.
+    \item Develop network slimming with L1 regularization on batch normalization scaling factors.
+    \item Apply SNIP pruning to evaluate connection sensitivity at initialization.
+    \item Implement dependency graph pruning to ensure structural consistency.
+    \item Design and implement the SharedDepthwiseBlock for parameter sharing in the ReASPP3 module.
+    \item Combine pruning techniques with weight sharing for maximum compression.
+\end{itemize}
+
+\subsection{Model Architecture and Evaluation}
+\begin{itemize}[label=--]
+    \item Analyze the RAAGR2-Net architecture and its computational characteristics.
+    \item Create a comprehensive evaluation framework with metrics for segmentation quality and model efficiency.
+    \item Implement experiment tracking with MLFlow for systematic comparison across methods.
+    \item Conduct experiments on the BraTS dataset, using 30-70 epochs of training with the Adam optimizer.
+    \item Measure key metrics including Dice coefficient, mean IoU, parameter count, and inference speed.
+    \item Compare pruned models to the baseline RAAGR2-Net on standard GPU hardware.
+\end{itemize}
+
+\subsection{Project Risks}
+\begin{itemize}[label=--]
+    \item \textbf{Performance Degradation:} Overly aggressive pruning might significantly reduce segmentation accuracy.
+    \item \textbf{Integration Complexity:} Combining pruning methods with weight sharing could create implementation challenges.
+    \item \textbf{Computational Resources:} Extensive experimentation across multiple pruning techniques and ratios requires significant computing resources.
+    \item \textbf{Reproducibility:} Ensuring consistent methodology across all compression techniques for fair comparison.
+\end{itemize}
+
+\end{document}

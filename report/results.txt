@@ -1,0 +1,1032 @@
+BASE MODEL
+
+{'dice_coef': 0.9849058066199465, 'mean_iou': 0.9709958939290628, 'class_dice': {'c2': 0.8254422625390495, 'c3': 0.824681282043457, 'c4': 0.8512506012509509}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 6.52 GB
+  RAM Change: 3.23 GB
+  Execution Time: 8.50 seconds
+  Peak GPU Memory: 0.55 GB
+  GPU Memory Change: 0.00 GB
+
+---
+8911301 num params
+33.99391555786133 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+12.878942489624023 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.28 GB
+  GPU Memory Change: 0.00 GB
+
+---
+34.25770092010498 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 89.99 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+MAGNITUDE 10%
+{'dice_coef': 0.7415336552189618, 'mean_iou': 0.8697208671308145, 'class_dice': {'c2': 0.18736368531315792, 'c3': 0.020902479987409784, 'c4': 0.043885993879152145}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 6.51 GB
+  RAM Change: 3.25 GB
+  Execution Time: 8.87 seconds
+  Peak GPU Memory: 0.51 GB
+  GPU Memory Change: 0.00 GB
+
+---
+8911301 num params
+33.99391555786133 param bytes
+903744 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+14.13257122039795 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.26 GB
+  GPU Memory Change: 0.00 GB
+
+---
+34.318307876586914 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.02 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+MAGNITUDE 20%
+{'dice_coef': 0.754736337719894, 'mean_iou': 0.8931290848952967, 'class_dice': {'c2': 0.0022380409603257006, 'c3': 0.020902479987409784, 'c4': 0.0004265603376729925}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.17 GB           
+  Average RAM: 6.52 GB        
+  RAM Change: 3.25 GB         
+  Execution Time: 8.50 seconds
+  Peak GPU Memory: 0.51 GB    
+  GPU Memory Change: 0.00 GB
+
+---  
+8911301 num params
+33.99391555786133 param bytes
+1793194 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.483476638793945 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.15 GB
+  GPU Memory Change: 0.00 GB
+
+---
+34.318307876586914 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.06 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+MAGNITUDE 30%
+{'dice_coef': 0.6076521499127876, 'mean_iou': 0.8443326328585787, 'class_dice': {'c2': 0.030793417540447014, 'c3': 0.020902479987409784, 'c4': 0.0015938938808309415}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 6.52 GB
+  RAM Change: 3.24 GB
+  Execution Time: 8.78 seconds
+  Peak GPU Memory: 0.41 GB
+  GPU Memory Change: 0.00 GB
+
+---
+8911301 num params
+33.99391555786133 param bytes
+2671824 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.287353515625 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.15 GB
+  GPU Memory Change: 0.00 GB
+
+---
+34.318307876586914 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.08 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+ENC_CON_STATS
+
+{'dice_coef': 0.9840950747815574, 'mean_iou': 0.9694771475908233, 'class_dice': {'c2': 0.7717155009144689, 'c3': 0.7817536428934191, 'c4': 0.8248078993907789}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 6.51 GB
+  RAM Change: 3.24 GB
+  Execution Time: 8.17 seconds
+  Peak GPU Memory: 0.68 GB
+  GPU Memory Change: 0.00 GB
+
+---
+6621141 num params
+25.257648468017578 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+11.79344654083252 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.13 GB
+  GPU Memory Change: 0.00 GB
+
+---
+25.500978469848633 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15794085888 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.11 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+
+
+
+SNIP - ONE -SHOT ->  10
+Sample Dice Scores - Tumor Core: 0.0396, Enhancing Tumor: 0.0246, Whole Tumor: 0.0774
+{'dice_coef': 0.2854810124490319, 'mean_iou': 0.005263439744495128, 'class_dice': {'c2': 0.03092042324928249, 'c3': 0.02092113197076975, 'c4': 0.07314092143461472}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 6.53 GB
+  RAM Change: 3.23 GB
+  Execution Time: 8.68 seconds
+  Peak GPU Memory: 0.51 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+8911301 num params
+33.99391555786133 param bytes
+899850 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+13.491582870483398 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.13 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+34.25452899932861 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.09 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+
+
+SNIP ONE SHOT -> 20
+
+{'dice_coef': 0.27890818511567467, 'mean_iou': 0.016920447221775426, 'class_dice': {'c2': 0.030956150174549803, 'c3': 0.020996450611231166, 'c4': 0.07373327995854907}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 6.54 GB
+  RAM Change: 3.23 GB
+  Execution Time: 8.59 seconds
+  Peak GPU Memory: 0.41 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+
+8911301 num params
+33.99391555786133 param bytes
+1788372 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—-
+13.390898704528809 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.24 seconds
+  Peak GPU Memory: 0.13 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+
+34.25452899932861 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+—
+
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.13 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+
+SNIP ONE SHOT -> 30
+{'dice_coef': 0.28660800707776374, 'mean_iou': 0.11128781272507296, 'class_dice': {'c2': 0.03102044675998935, 'c3': 0.020961067801136976, 'c4': 0.07407471528503953}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 6.51 GB
+  RAM Change: 3.23 GB
+  Execution Time: 8.62 seconds
+  Peak GPU Memory: 0.34 GB
+  GPU Memory Change: 0.00 GB
+
+---
+8911301 num params
+33.99391555786133 param bytes
+2676893 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.980650901794434 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.28 GB
+  GPU Memory Change: 0.00 GB
+
+---
+34.25452899932861 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+15919276032 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.04 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.13 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+ 
+DEPGRAPH 10 
+{'dice_coef': 0.9528452724945254, 'mean_iou': 0.9154405397612874, 'class_dice': {'c2': 0.2480454042599332, 'c3': 0.17733553885311887, 'c4': 0.24610412102646945}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 6.50 GB
+  RAM Change: 3.24 GB
+  Execution Time: 8.88 seconds
+  Peak GPU Memory: 0.45 GB
+  GPU Memory Change: 0.00 GB
+
+---
+7293449 num params
+27.82229995727539 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.973426818847656 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.24 seconds
+  Peak GPU Memory: 0.37 GB
+  GPU Memory Change: 0.00 GB
+
+---
+28.127044677734375 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13009615488 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.25 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+DEPGRAPH 20 
+
+{'dice_coef': 0.5969828781558246, 'mean_iou': 0.4391923608576379, 'class_dice': {'c2': 0.06328019836531361, 'c3': 0.0009738143633557029, 'c4': 0.035040179994411585}}
+
+Memory Usage Statistics:      
+  Peak RAM: 8.19 GB           
+  Average RAM: 6.53 GB        
+  RAM Change: 3.24 GB         
+  Execution Time: 8.24 seconds
+  Peak GPU Memory: 0.42 GB    
+  GPU Memory Change: 0.00 GB
+
+---  
+6141273 num params
+23.42709732055664 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.68556022644043 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.40 GB
+  GPU Memory Change: 0.00 GB
+
+---
+23.721160888671875 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+10838892960 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 90.11 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+DEPGRAPH 30
+{'dice_coef': 0.5969828781558246, 'mean_iou': 0.4391923608576379, 'class_dice': {'c2': 0.06328019836531361, 'c3': 0.0009738143633557029, 'c4': 0.035040179994411585}}
+
+Memory Usage Statistics:      
+  Peak RAM: 8.19 GB           
+  Average RAM: 6.53 GB        
+  RAM Change: 3.24 GB         
+  Execution Time: 8.24 seconds
+  Peak GPU Memory: 0.42 GB    
+  GPU Memory Change: 0.00 GB
+
+---  
+6141273 num params
+23.42709732055664 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.68556022644043 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.40 GB
+  GPU Memory Change: 0.00 GB
+
+---
+23.721160888671875 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+  GPU Memory Change: 0.00 GB
+
+---
+10838892960 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.03 GB
+(venv) PS C:\Users\P2839161\OneDrive - De Montfort University\school-dissertation-main> python -m truth
+Model loaded successfully and set to evaluation mode
+Batch shape - Images: torch.Size([8, 4, 192, 192]), Masks: torch.Size([8, 5, 192, 192])
+7                                                                                      
+Sample Dice Scores - Tumor Core: 0.0287, Enhancing Tumor: 0.0209, Whole Tumor: 0.0874
+Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers). Got range [-1.0..1.6359378].
+{'dice_coef': 0.4275324450033467, 'mean_iou': 0.3057016427742272, 'class_dice': {'c2': 0.060948940834439386, 'c3': 0.047258971503186156, 'c4': 0.11214170868440372}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB           
+  Average RAM: 6.53 GB        
+  RAM Change: 3.24 GB         
+  Execution Time: 7.79 seconds
+  Peak GPU Memory: 0.37 GB    
+  GPU Memory Change: 0.00 GB
+
+---  
+5083369 num params
+19.39151382446289 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+13.181185722351074 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.12 GB
+  GPU Memory Change: 0.00 GB
+
+---
+19.677703857421875 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+8809260480 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 8.18 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 89.82 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+DEPTHWISE SHARED
+
+{'dice_coef': 0.9836948237768034, 'mean_iou': 0.9689786855767413, 'class_dice': {'c2': 0.7637660056352615, 'c3': 0.6408459484213735, 'c4': 0.8525908211382424}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.18 GB
+  Average RAM: 6.52 GB
+  RAM Change: 3.24 GB
+  Execution Time: 7.75 seconds
+  Peak GPU Memory: 0.47 GB
+  GPU Memory Change: 0.00 GB
+
+---
+5046221 num params
+19.249805450439453 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+12.675261497497559 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.16 GB
+  GPU Memory Change: 0.00 GB
+
+---
+19.443893432617188 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+11862614016 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.19 GB
+  Average RAM: 8.19 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 88.88 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+PAIRED SHARED DEPTHWISE
+
+{'dice_coef': 0.9785691721410286, 'mean_iou': 0.9599271264018082, 'class_dice': {'c2': 0.6933742690740562, 'c3': 0.6718738427976283, 'c4': 0.7726584445776009}}
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 6.52 GB
+  RAM Change: 3.24 GB
+  Execution Time: 7.83 seconds
+  Peak GPU Memory: 0.29 GB
+  GPU Memory Change: 0.00 GB
+
+---
+5051061 num params
+19.268268585205078 param bytes
+0 zero params
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+11.99803352355957 avg inference time
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.23 seconds
+  Peak GPU Memory: 0.14 GB
+  GPU Memory Change: 0.00 GB
+
+---
+19.46550178527832 model size
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+11862614016 flops
+
+Memory Usage Statistics:
+  Peak RAM: 8.20 GB
+  Average RAM: 8.20 GB
+  RAM Change: 0.00 GB
+  Execution Time: 0.12 seconds
+  Peak GPU Memory: 0.02 GB
+  GPU Memory Change: 0.00 GB
+
+---
+
+===== SYSTEM INFORMATION =====
+System: Windows 10 10.0.19045
+Python version: 3.11.4
+PyTorch version: 2.5.1+cu121
+CPU: 10 physical cores, 20 logical cores
+System RAM: 127.73 GB total, 88.89 GB available
+CUDA available: Yes
+CUDA version: 12.1
+GPU device count: 1
+GPU 0: NVIDIA RTX A5000
+  - Compute capability: 8.6
+  - Total memory: 23.99 GB
+
+
+

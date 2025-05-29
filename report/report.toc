@@ -1,0 +1,69 @@
+\contentsline {section}{\numberline {1}Introduction}{6}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Theoretical Foundation and Novel Insights}{8}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Research Questions}{8}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Specific Objectives}{9}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Literature Review and Related Works}{9}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Neural Network Pruning Approaches}{9}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Parameter Sharing Strategies}{12}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Foundations and Evolution}{13}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Applications in Large Models}{13}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Encoder-Decoder Weight Sharing}{13}{subsubsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.3}Depth-wise Parameter Sharing}{14}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Implementation Considerations}{15}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Benefits and Trade-offs}{15}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Critical Analysis and Project Implications}{15}{subsubsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.4}Parameter Sharing vs Pruning}{16}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}U-Net Derivatives for Medical Image Segmentation}{16}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Methodology}{17}{section.3}%
+\contentsline {subsection}{\numberline {3.1}RAAGR2-Net Architecture}{18}{subsection.3.1}%
+\contentsline {subsubsection}{\numberline {3.1.1}Encoder-Decoder Backbone}{18}{subsubsection.3.1.1}%
+\contentsline {subsubsection}{\numberline {3.1.2}Recurrent CNN Blocks (RRCNNBlock)}{18}{subsubsection.3.1.2}%
+\contentsline {subsubsection}{\numberline {3.1.3}ReASPP3 Module}{18}{subsubsection.3.1.3}%
+\contentsline {subsubsection}{\numberline {3.1.4}Attention Gates}{19}{subsubsection.3.1.4}%
+\contentsline {subsubsection}{\numberline {3.1.5}Loss Function}{19}{subsubsection.3.1.5}%
+\contentsline {subsection}{\numberline {3.2}Pruning Implementation}{20}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Methodological Framework for Pruning Evaluation}{20}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Magnitude-Based Pruning}{20}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}SNIP Pruning}{21}{subsubsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {3.2.4}DepGraph Pruning}{21}{subsubsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.3}Shared-Weight Implementation}{22}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}SharedDepthwiseBlock Design}{22}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Integration into ReASPP3}{22}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}Parameter Reduction Analysis}{23}{subsubsection.3.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.4}Theoretical Relationship to Transformers}{24}{subsubsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.4}Implementation Details}{24}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Codebase Organization}{24}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Training Setup}{25}{subsubsection.3.4.2}%
+\contentsline {subsubsection}{\numberline {3.4.3}Experiment Tracking with MLFlow}{25}{subsubsection.3.4.3}%
+\contentsline {subsubsection}{\numberline {3.4.4}Evaluation Metrics}{26}{subsubsection.3.4.4}%
+\contentsline {subsubsection}{\numberline {3.4.5}Dataset}{27}{subsubsection.3.4.5}%
+\contentsline {section}{\numberline {4}Results}{27}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Comprehensive Model Performance Tables}{28}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}Performance Metrics Comparison}{28}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2}Model Statistics and Computational Benchmarks}{28}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.3}Comprehensive Reduction Analysis}{29}{subsubsection.4.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.4}Key Insights from Tabular Analysis}{30}{subsubsection.4.1.4}%
+\contentsline {subsection}{\numberline {4.2}Architectural Modifications Performance Analysis}{31}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Pruning Method Analysis}{32}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Resource Efficiency Analysis}{33}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Training Dynamics and Convergence}{35}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Comparative Convergence Analysis}{35}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}Training Efficiency and Computational Implications}{36}{subsubsection.4.5.2}%
+\contentsline {subsubsection}{\numberline {4.5.3}Implications for Medical AI Development}{37}{subsubsection.4.5.3}%
+\contentsline {section}{\numberline {5}Discussion}{37}{section.5}%
+\contentsline {subsubsection}{\numberline {5.0.1}Mechanisms of Enhanced Training Stability}{37}{subsubsection.5.0.1}%
+\contentsline {subsection}{\numberline {5.1}Theoretical Analysis of Overall vs. Class-Specific Performance Differential}{38}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Feature Hierarchy and Compression Sensitivity}{38}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}Architectural Constraints and Representational Capacity}{39}{subsubsection.5.1.2}%
+\contentsline {subsubsection}{\numberline {5.1.3}Training Dynamics and Optimization Landscape Effects}{39}{subsubsection.5.1.3}%
+\contentsline {subsubsection}{\numberline {5.1.4}Clinical Implications of Performance Differential}{40}{subsubsection.5.1.4}%
+\contentsline {subsection}{\numberline {5.2}Key Findings and Implications}{40}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Other Analytical Insights}{43}{subsubsection.5.2.1}%
+\contentsline {section}{\numberline {6}Conclusion}{43}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Key Contributions}{43}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Principal Findings}{44}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Clinical Implications}{44}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Limitations and Future Work}{45}{subsection.6.4}%
+\contentsline {subsubsection}{\numberline {6.4.1}Critical Methodological Analysis}{45}{subsubsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.5}Future Research Directions}{46}{subsection.6.5}%
+\contentsline {subsection}{\numberline {6.6}Final Remarks}{47}{subsection.6.6}%

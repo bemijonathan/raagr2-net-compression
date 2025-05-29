@@ -1,7 +1,8 @@
+from email.headerregistry import DateHeader
 import numpy as np
 import os
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, random_split, DataLoader
 import numpy as np
 import os
 
@@ -32,3 +33,35 @@ class BrainDataset(Dataset):
             y = self.transform(y)
 
         return x, y
+
+
+def get_data_loaders(data_dir, batch_size=8, train_val_split=0.8, seed=42):
+
+    full_train_dataset = BrainDataset(data_dir)
+
+    # Calculate sizes for train and validation splits
+    train_size = int(train_val_split * len(full_train_dataset))
+    val_size = len(full_train_dataset) - train_size
+
+    # Split the dataset
+    train_dataset, val_dataset = random_split(
+        full_train_dataset,
+        [train_size, val_size],
+        generator=torch.Generator().manual_seed(seed)
+    )
+
+    # Use the existing validation set as the test set
+    test_dataset = BrainDataset(data_dir, "val")
+
+    # Create data loaders
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=batch_size
+    )
+    test_loader = DataLoader(
+        test_dataset, batch_size=batch_size
+    )
+
+    return train_loader, val_loader, test_loader
